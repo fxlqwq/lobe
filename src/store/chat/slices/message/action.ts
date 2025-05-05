@@ -1,128 +1,138 @@
 /* eslint-disable sort-keys-fix/sort-keys-fix, typescript-sort-keys/interface */
 // Disable the auto sort key eslint rule to make the code more logic and readable
 import { copyToClipboard } from '@lobehub/ui';
-import { template } from 'lodash-es';
+import isEqual from 'fast-deep-equal';
 import { SWRResponse, mutate } from 'swr';
 import { StateCreator } from 'zustand/vanilla';
 
-import { LOADING_FLAT, isFunctionMessageAtStart, testFunctionMessageAtEnd } from '@/const/message';
-import { TraceEventType, TraceNameMap } from '@/const/trace';
-import { CreateMessageParams } from '@/database/models/message';
+import { TraceEventType } from '@/const/trace';
 import { useClientDataSWR } from '@/libs/swr';
-import { chatService } from '@/services/chat';
 import { messageService } from '@/services/message';
 import { topicService } from '@/services/topic';
 import { traceService } from '@/services/trace';
-import { chatHelpers } from '@/store/chat/helpers';
 import { ChatStore } from '@/store/chat/store';
-import { useSessionStore } from '@/store/session';
-import { agentSelectors } from '@/store/session/selectors';
-import { ChatMessage } from '@/types/message';
+import { messageMapKey } from '@/store/chat/utils/messageMapKey';
+import { ChatErrorType } from '@/types/fetch';
+import {
+  ChatMessage,
+  ChatMessageError,
+  ChatMessagePluginError,
+  CreateMessageParams,
+  MessageMetadata,
+  MessageToolCall,
+  ModelReasoning,
+} from '@/types/message';
+import { ChatImageItem } from '@/types/message/image';
+import { GroundingSearch } from '@/types/search';
 import { TraceEventPayloads } from '@/types/trace';
 import { setNamespace } from '@/utils/storeDebug';
+import { nanoid } from '@/utils/uuid';
 
+import type { ChatStoreState } from '../../initialState';
 import { chatSelectors } from '../../selectors';
+import { preventLeavingFn, toggleBooleanList } from '../../utils';
 import { MessageDispatch, messagesReducer } from './reducer';
 
-const n = setNamespace('message');
+const n = setNamespace('m');
 
 const SWR_USE_FETCH_MESSAGES = 'SWR_USE_FETCH_MESSAGES';
 
-interface SendMessageParams {
-  message: string;
-  files?: { id: string; url: string }[];
-  onlyAddUserMessage?: boolean;
-}
-
 export interface ChatMessageAction {
   // create
-  sendMessage: (params: SendMessageParams) => Promise<void>;
-  /**
-   * regenerate message
-   * trace enabled
-   * @param id
-   */
-  regenerateMessage: (id: string) => Promise<void>;
-
+  addAIMessage: () => Promise<void>;
   // delete
   /**
    * clear message on the active session
    */
   clearMessage: () => Promise<void>;
   deleteMessage: (id: string) => Promise<void>;
-  delAndRegenerateMessage: (id: string) => Promise<void>;
+  deleteToolMessage: (id: string) => Promise<void>;
   clearAllMessages: () => Promise<void>;
   // update
   updateInputMessage: (message: string) => void;
   modifyMessageContent: (id: string, content: string) => Promise<void>;
+  toggleMessageEditing: (id: string, editing: boolean) => void;
   // query
-  useFetchMessages: (sessionId: string, topicId?: string) => SWRResponse<ChatMessage[]>;
-  stopGenerateMessage: () => void;
+  useFetchMessages: (
+    enable: boolean,
+    sessionId: string,
+    topicId?: string,
+  ) => SWRResponse<ChatMessage[]>;
   copyMessage: (id: string, content: string) => Promise<void>;
+  refreshMessages: () => Promise<void>;
 
   // =========  ↓ Internal Method ↓  ========== //
   // ========================================== //
   // ========================================== //
 
   /**
-   * update message at the frontend point
+   * update message at the frontend
    * this method will not update messages to database
    */
-  dispatchMessage: (payload: MessageDispatch) => void;
+  internal_dispatchMessage: (payload: MessageDispatch) => void;
+
   /**
-   * core process of the AI message (include preprocess and postprocess)
+   * update the message content with optimistic update
+   * a method used by other action
    */
-  coreProcessMessage: (
-    messages: ChatMessage[],
-    parentId: string,
-    traceId?: string,
+  internal_updateMessageContent: (
+    id: string,
+    content: string,
+    extra?: {
+      toolCalls?: MessageToolCall[];
+      reasoning?: ModelReasoning;
+      search?: GroundingSearch;
+      metadata?: MessageMetadata;
+      imageList?: ChatImageItem[];
+      model?: string;
+      provider?: string;
+    },
   ) => Promise<void>;
   /**
-   * 实际获取 AI 响应
-   * @param messages - 聊天消息数组
-   * @param options - 获取 SSE 选项
+   * update the message error with optimistic update
    */
-  fetchAIChatMessage: (
-    messages: ChatMessage[],
-    assistantMessageId: string,
-    traceId?: string,
-  ) => Promise<{
-    content: string;
-    functionCallAtEnd: boolean;
-    functionCallContent: string;
-    isFunctionCall: boolean;
-    traceId?: string;
-  }>;
-  toggleChatLoading: (
+  internal_updateMessageError: (id: string, error: ChatMessageError | null) => Promise<void>;
+  internal_updateMessagePluginError: (
+    id: string,
+    error: ChatMessagePluginError | null,
+  ) => Promise<void>;
+  /**
+   * create a message with optimistic update
+   */
+  internal_createMessage: (
+    params: CreateMessageParams,
+    context?: { tempMessageId?: string; skipRefresh?: boolean },
+  ) => Promise<string | undefined>;
+  /**
+   * create a temp message for optimistic update
+   * otherwise the message will be too slow to show
+   */
+  internal_createTmpMessage: (params: CreateMessageParams) => string;
+  /**
+   * delete the message content with optimistic update
+   */
+  internal_deleteMessage: (id: string) => Promise<void>;
+
+  internal_fetchMessages: () => Promise<void>;
+  internal_traceMessage: (id: string, payload: TraceEventPayloads) => Promise<void>;
+
+  /**
+   * method to toggle message create loading state
+   * the AI message status is creating -> generating
+   * other message role like user and tool , only this method need to be called
+   */
+  internal_toggleMessageLoading: (loading: boolean, id: string) => void;
+
+  /**
+   * helper to toggle the loading state of the array,used by these three toggleXXXLoading
+   */
+  internal_toggleLoadingArrays: (
+    key: keyof ChatStoreState,
     loading: boolean,
     id?: string,
     action?: string,
   ) => AbortController | undefined;
-  refreshMessages: () => Promise<void>;
-  // TODO: 后续 smoothMessage 实现考虑落到 sse 这一层
-  createSmoothMessage: (id: string) => {
-    startAnimation: (speed?: number) => Promise<void>;
-    stopAnimation: () => void;
-    outputQueue: string[];
-    isAnimationActive: boolean;
-  };
-  /**
-   * a method used by other action
-   * @param id
-   * @param content
-   */
-  internalUpdateMessageContent: (id: string, content: string) => Promise<void>;
-  internalResendMessage: (id: string, traceId?: string) => Promise<void>;
-  internalTraceMessage: (id: string, payload: TraceEventPayloads) => Promise<void>;
 }
-
-const getAgentConfig = () => agentSelectors.currentAgentConfig(useSessionStore.getState());
-
-const preventLeavingFn = (e: BeforeUnloadEvent) => {
-  // set returnValue to trigger alert modal
-  // Note: No matter what value is set, the browser will display the standard text
-  e.returnValue = '你有正在生成中的请求，确定要离开吗？';
-};
 
 export const chatMessage: StateCreator<
   ChatStore,
@@ -131,28 +141,49 @@ export const chatMessage: StateCreator<
   ChatMessageAction
 > = (set, get) => ({
   deleteMessage: async (id) => {
-    await messageService.removeMessage(id);
+    const message = chatSelectors.getMessageById(id)(get());
+    if (!message) return;
+
+    let ids = [message.id];
+
+    // if the message is a tool calls, then delete all the related messages
+    if (message.tools) {
+      const toolMessageIds = message.tools.flatMap((tool) => {
+        const messages = chatSelectors
+          .activeBaseChats(get())
+          .filter((m) => m.tool_call_id === tool.id);
+
+        return messages.map((m) => m.id);
+      });
+      ids = ids.concat(toolMessageIds);
+    }
+
+    get().internal_dispatchMessage({ type: 'deleteMessages', ids });
+    await messageService.removeMessages(ids);
     await get().refreshMessages();
   },
-  delAndRegenerateMessage: async (id) => {
-    const traceId = chatSelectors.getTraceIdByMessageId(id)(get());
-    get().internalResendMessage(id, traceId);
-    get().deleteMessage(id);
 
-    // trace the delete and regenerate message
-    get().internalTraceMessage(id, { eventType: TraceEventType.DeleteAndRegenerateMessage });
-  },
-  regenerateMessage: async (id: string) => {
-    const traceId = chatSelectors.getTraceIdByMessageId(id)(get());
-    await get().internalResendMessage(id, traceId);
+  deleteToolMessage: async (id) => {
+    const message = chatSelectors.getMessageById(id)(get());
+    if (!message || message.role !== 'tool') return;
 
-    // trace the delete and regenerate message
-    get().internalTraceMessage(id, { eventType: TraceEventType.RegenerateMessage });
+    const removeToolInAssistantMessage = async () => {
+      if (!message.parentId) return;
+      await get().internal_removeToolToAssistantMessage(message.parentId, message.tool_call_id);
+    };
+
+    await Promise.all([
+      // 1. remove tool message
+      get().internal_deleteMessage(id),
+      // 2. remove the tool item in the assistant tools
+      removeToolInAssistantMessage(),
+    ]);
   },
+
   clearMessage: async () => {
     const { activeId, activeTopicId, refreshMessages, refreshTopic, switchTopic } = get();
 
-    await messageService.removeMessages(activeId, activeTopicId);
+    await messageService.removeMessagesByAssistant(activeId, activeTopicId);
 
     if (activeTopicId) {
       await topicService.removeTopic(activeTopicId);
@@ -165,131 +196,70 @@ export const chatMessage: StateCreator<
   },
   clearAllMessages: async () => {
     const { refreshMessages } = get();
-    await messageService.clearAllMessage();
+    await messageService.removeAllMessages();
     await refreshMessages();
   },
-  internalResendMessage: async (messageId, traceId) => {
-    // 1. 构造所有相关的历史记录
-    const chats = chatSelectors.currentChats(get());
-
-    const currentIndex = chats.findIndex((c) => c.id === messageId);
-    if (currentIndex < 0) return;
-
-    const currentMessage = chats[currentIndex];
-
-    let contextMessages: ChatMessage[] = [];
-
-    switch (currentMessage.role) {
-      case 'function':
-      case 'user': {
-        contextMessages = chats.slice(0, currentIndex + 1);
-        break;
-      }
-      case 'assistant': {
-        // 消息是 AI 发出的因此需要找到它的 user 消息
-        const userId = currentMessage.parentId;
-        const userIndex = chats.findIndex((c) => c.id === userId);
-        // 如果消息没有 parentId，那么同 user/function 模式
-        contextMessages = chats.slice(0, userIndex < 0 ? currentIndex + 1 : userIndex + 1);
-        break;
-      }
-    }
-
-    if (contextMessages.length <= 0) return;
-
-    const { coreProcessMessage } = get();
-
-    const latestMsg = contextMessages.filter((s) => s.role === 'user').at(-1);
-
-    if (!latestMsg) return;
-
-    await coreProcessMessage(contextMessages, latestMsg.id, traceId);
-  },
-  sendMessage: async ({ message, files, onlyAddUserMessage }) => {
-    const { coreProcessMessage, activeTopicId, activeId } = get();
+  addAIMessage: async () => {
+    const { internal_createMessage, updateInputMessage, activeTopicId, activeId, inputMessage } =
+      get();
     if (!activeId) return;
 
-    const fileIdList = files?.map((f) => f.id);
-
-    // if message is empty and no files, then stop
-    if (!message && (!fileIdList || fileIdList?.length === 0)) return;
-
-    const newMessage: CreateMessageParams = {
-      content: message,
-      // if message has attached with files, then add files to message and the agent
-      files: fileIdList,
-      role: 'user',
+    await internal_createMessage({
+      content: inputMessage,
+      role: 'assistant',
       sessionId: activeId,
       // if there is activeTopicId，then add topicId to message
       topicId: activeTopicId,
-    };
+    });
 
-    const id = await messageService.create(newMessage);
-    await get().refreshMessages();
-
-    // if only add user message, then stop
-    if (onlyAddUserMessage) return;
-
-    // Get the current messages to generate AI response
-    const messages = chatSelectors.currentChats(get());
-
-    await coreProcessMessage(messages, id);
-
-    // check activeTopic and then auto create topic
-    const chats = chatSelectors.currentChats(get());
-
-    const agentConfig = getAgentConfig();
-    // if autoCreateTopic is false, then stop
-    if (!agentConfig.enableAutoCreateTopic) return;
-
-    if (!activeTopicId && chats.length >= agentConfig.autoCreateTopicThreshold) {
-      const { saveToTopic, switchTopic } = get();
-      const id = await saveToTopic();
-      if (id) switchTopic(id);
-    }
+    updateInputMessage('');
   },
-
   copyMessage: async (id, content) => {
     await copyToClipboard(content);
 
-    get().internalTraceMessage(id, { eventType: TraceEventType.CopyMessage });
+    get().internal_traceMessage(id, { eventType: TraceEventType.CopyMessage });
+  },
+  toggleMessageEditing: (id, editing) => {
+    set(
+      { messageEditingIds: toggleBooleanList(get().messageEditingIds, id, editing) },
+      false,
+      'toggleMessageEditing',
+    );
   },
 
-  stopGenerateMessage: () => {
-    const { abortController, toggleChatLoading } = get();
-    if (!abortController) return;
-
-    abortController.abort();
-
-    toggleChatLoading(false, undefined, n('stopGenerateMessage') as string);
-  },
   updateInputMessage: (message) => {
+    if (isEqual(message, get().inputMessage)) return;
+
     set({ inputMessage: message }, false, n('updateInputMessage', message));
   },
   modifyMessageContent: async (id, content) => {
     // tracing the diff of update
     // due to message content will change, so we need send trace before update,or will get wrong data
-    get().internalTraceMessage(id, {
+    get().internal_traceMessage(id, {
       eventType: TraceEventType.ModifyMessage,
       nextContent: content,
     });
 
-    await get().internalUpdateMessageContent(id, content);
+    await get().internal_updateMessageContent(id, content);
   },
-  useFetchMessages: (sessionId, activeTopicId) =>
+  useFetchMessages: (enable, sessionId, activeTopicId) =>
     useClientDataSWR<ChatMessage[]>(
-      [SWR_USE_FETCH_MESSAGES, sessionId, activeTopicId],
+      enable ? [SWR_USE_FETCH_MESSAGES, sessionId, activeTopicId] : null,
       async ([, sessionId, topicId]: [string, string, string | undefined]) =>
         messageService.getMessages(sessionId, topicId),
       {
         onSuccess: (messages, key) => {
+          const nextMap = {
+            ...get().messagesMap,
+            [messageMapKey(sessionId, activeTopicId)]: messages,
+          };
+          // no need to update map if the messages have been init and the map is the same
+          if (get().messagesInit && isEqual(nextMap, get().messagesMap)) return;
+
           set(
-            { activeId: sessionId, messages, messagesInit: true },
+            { messagesInit: true, messagesMap: nextMap },
             false,
-            n('useFetchMessages', {
-              messages,
-              queryKey: key,
-            }),
+            n('useFetchMessages', { messages, queryKey: key }),
           );
         },
       },
@@ -299,319 +269,127 @@ export const chatMessage: StateCreator<
   },
 
   // the internal process method of the AI message
-  coreProcessMessage: async (messages, userMessageId, trace) => {
-    const { fetchAIChatMessage, triggerFunctionCall, refreshMessages, activeTopicId } = get();
-
-    const { model, provider } = getAgentConfig();
-
-    // 1. Add an empty message to place the AI response
-    const assistantMessage: CreateMessageParams = {
-      role: 'assistant',
-      content: LOADING_FLAT,
-      fromModel: model,
-      fromProvider: provider,
-
-      parentId: userMessageId,
-      sessionId: get().activeId,
-      topicId: activeTopicId, // if there is activeTopicId，then add it to topicId
-    };
-
-    const mid = await messageService.create(assistantMessage);
-    await refreshMessages();
-
-    // 2. fetch the AI response
-    const { isFunctionCall, content, functionCallAtEnd, functionCallContent, traceId } =
-      await fetchAIChatMessage(messages, mid, trace);
-
-    // 3. if it's the function call message, trigger the function method
-    if (isFunctionCall) {
-      let functionId = mid;
-
-      // if the function call is at the end of the message, then create a new function message
-      if (functionCallAtEnd) {
-        // create a new separate message and remove the function call from the prev message
-
-        await get().internalUpdateMessageContent(mid, content.replace(functionCallContent, ''));
-
-        const functionMessage: CreateMessageParams = {
-          role: 'function',
-          content: functionCallContent,
-          fromModel: model,
-          fromProvider: provider,
-
-          parentId: userMessageId,
-          sessionId: get().activeId,
-          topicId: activeTopicId,
-          traceId,
-        };
-
-        functionId = await messageService.create(functionMessage);
-      }
-
-      await refreshMessages();
-      await triggerFunctionCall(functionId);
-    }
-  },
-  dispatchMessage: (payload) => {
+  internal_dispatchMessage: (payload) => {
     const { activeId } = get();
 
     if (!activeId) return;
 
-    const messages = messagesReducer(get().messages, payload);
+    const messages = messagesReducer(chatSelectors.activeBaseChats(get()), payload);
 
-    set({ messages }, false, n(`dispatchMessage/${payload.type}`, payload));
+    const nextMap = { ...get().messagesMap, [chatSelectors.currentChatKey(get())]: messages };
+
+    if (isEqual(nextMap, get().messagesMap)) return;
+
+    set({ messagesMap: nextMap }, false, { type: `dispatchMessage/${payload.type}`, payload });
   },
-  fetchAIChatMessage: async (messages, assistantId, traceId) => {
-    const {
-      toggleChatLoading,
-      refreshMessages,
-      internalUpdateMessageContent,
-      dispatchMessage,
-      createSmoothMessage,
-    } = get();
 
-    const abortController = toggleChatLoading(
-      true,
-      assistantId,
-      n('generateMessage(start)', { assistantId, messages }) as string,
-    );
-
-    const config = getAgentConfig();
-
-    const compiler = template(config.inputTemplate, { interpolate: /{{([\S\s]+?)}}/g });
-
-    // ================================== //
-    //   messages uniformly preprocess    //
-    // ================================== //
-
-    // 1. slice messages with config
-    let preprocessMsgs = chatHelpers.getSlicedMessagesWithConfig(messages, config);
-
-    // 2. replace inputMessage template
-    preprocessMsgs = !config.inputTemplate
-      ? preprocessMsgs
-      : preprocessMsgs.map((m) => {
-          if (m.role === 'user') {
-            try {
-              return { ...m, content: compiler({ text: m.content }) };
-            } catch (error) {
-              console.error(error);
-
-              return m;
-            }
-          }
-
-          return m;
-        });
-
-    // 3. add systemRole
-    if (config.systemRole) {
-      preprocessMsgs.unshift({ content: config.systemRole, role: 'system' } as ChatMessage);
-    }
-
-    // 4. handle max_tokens
-    config.params.max_tokens = config.enableMaxTokens ? config.params.max_tokens : undefined;
-
-    // 5. handle config for the vision model
-    // Due to the gpt-4-vision-preview model's default max_tokens is very small
-    // we need to set the max_tokens a larger one.
-    if (config.model === 'gpt-4-vision-preview') {
-      /* eslint-disable unicorn/no-lonely-if */
-      if (!config.params.max_tokens)
-        // refs: https://github.com/lobehub/lobe-chat/issues/837
-        config.params.max_tokens = 2048;
-    }
-
-    let output = '';
-    let isFunctionCall = false;
-    let functionCallAtEnd = false;
-    let functionCallContent = '';
-    let msgTraceId: string | undefined;
-
-    const { startAnimation, stopAnimation, outputQueue, isAnimationActive } =
-      createSmoothMessage(assistantId);
-
-    await chatService.createAssistantMessageStream({
-      abortController,
-      params: {
-        messages: preprocessMsgs,
-        model: config.model,
-        provider: config.provider,
-        ...config.params,
-        plugins: config.plugins,
-      },
-      trace: {
-        traceId,
-        sessionId: get().activeId,
-        topicId: get().activeTopicId,
-        traceName: TraceNameMap.Conversation,
-      },
-      onErrorHandle: async (error) => {
-        await messageService.updateMessageError(assistantId, error);
-        await refreshMessages();
-      },
-      onAbort: async () => {
-        stopAnimation();
-      },
-      onFinish: async (content, { traceId, observationId }) => {
-        stopAnimation();
-        // if there is traceId, update it
-        if (traceId) {
-          msgTraceId = traceId;
-          await messageService.updateMessage(assistantId, {
-            traceId,
-            observationId: observationId ?? undefined,
-          });
-        }
-
-        // if there is still content not displayed,
-        // and the message is not a function call
-        // then continue the animation
-        if (outputQueue.length > 0 && !isFunctionCall) {
-          await startAnimation(15);
-        }
-
-        // update the content after fetch result
-        await internalUpdateMessageContent(assistantId, content);
-      },
-      onMessageHandle: async (text) => {
-        output += text;
-        outputQueue.push(...text.split(''));
-
-        // is this message is just a function call
-        if (isFunctionMessageAtStart(output)) {
-          stopAnimation();
-          dispatchMessage({
-            id: assistantId,
-            key: 'content',
-            type: 'updateMessage',
-            value: output,
-          });
-          isFunctionCall = true;
-        }
-
-        // if it's the first time to receive the message,
-        // and the message is not a function call
-        // then start the animation
-        if (!isAnimationActive && !isFunctionCall) startAnimation();
-      },
-    });
-
-    toggleChatLoading(false, undefined, n('generateMessage(end)') as string);
-
-    // also exist message like this:
-    // 请稍等，我帮您查询一下。{"tool_calls":[{"id":"call_sbca","type":"function","function":{"name":"pluginName____apiName","arguments":{"key":"value"}}}]}
-    if (!isFunctionCall) {
-      const { content, valid } = testFunctionMessageAtEnd(output);
-
-      // if fc at end, replace the message
-      if (valid) {
-        isFunctionCall = true;
-        functionCallAtEnd = true;
-        functionCallContent = content;
-      }
-    }
-
-    return {
-      content: output,
-      functionCallAtEnd,
-      functionCallContent,
-      isFunctionCall,
-      traceId: msgTraceId,
-    };
+  internal_updateMessageError: async (id, error) => {
+    get().internal_dispatchMessage({ id, type: 'updateMessage', value: { error } });
+    await messageService.updateMessage(id, { error });
+    await get().refreshMessages();
   },
-  toggleChatLoading: (loading, id, action) => {
-    if (loading) {
-      window.addEventListener('beforeunload', preventLeavingFn);
 
-      const abortController = new AbortController();
-      set({ abortController, chatLoadingId: id }, false, action);
-
-      return abortController;
-    } else {
-      set({ abortController: undefined, chatLoadingId: undefined }, false, action);
-
-      window.removeEventListener('beforeunload', preventLeavingFn);
-    }
+  internal_updateMessagePluginError: async (id, error) => {
+    await messageService.updateMessagePluginError(id, error);
+    await get().refreshMessages();
   },
-  internalUpdateMessageContent: async (id, content) => {
-    const { dispatchMessage, refreshMessages } = get();
+
+  internal_updateMessageContent: async (id, content, extra) => {
+    const { internal_dispatchMessage, refreshMessages, internal_transformToolCalls } = get();
 
     // Due to the async update method and refresh need about 100ms
     // we need to update the message content at the frontend to avoid the update flick
     // refs: https://medium.com/@kyledeguzmanx/what-are-optimistic-updates-483662c3e171
-    dispatchMessage({ id, key: 'content', type: 'updateMessage', value: content });
+    if (extra?.toolCalls) {
+      internal_dispatchMessage({
+        id,
+        type: 'updateMessage',
+        value: { tools: internal_transformToolCalls(extra?.toolCalls) },
+      });
+    } else {
+      internal_dispatchMessage({
+        id,
+        type: 'updateMessage',
+        value: { content },
+      });
+    }
 
-    await messageService.updateMessage(id, { content });
+    await messageService.updateMessage(id, {
+      content,
+      tools: extra?.toolCalls ? internal_transformToolCalls(extra?.toolCalls) : undefined,
+      reasoning: extra?.reasoning,
+      search: extra?.search,
+      metadata: extra?.metadata,
+      model: extra?.model,
+      provider: extra?.provider,
+      imageList: extra?.imageList,
+    });
     await refreshMessages();
   },
 
-  createSmoothMessage: (id) => {
-    const { dispatchMessage } = get();
+  internal_createMessage: async (message, context) => {
+    const {
+      internal_createTmpMessage,
+      refreshMessages,
+      internal_toggleMessageLoading,
+      internal_dispatchMessage,
+    } = get();
+    let tempId = context?.tempMessageId;
+    if (!tempId) {
+      // use optimistic update to avoid the slow waiting
+      tempId = internal_createTmpMessage(message);
 
-    let buffer = '';
-    // why use queue: https://shareg.pt/GLBrjpK
-    let outputQueue: string[] = [];
+      internal_toggleMessageLoading(true, tempId);
+    }
 
-    // eslint-disable-next-line no-undef
-    let animationTimeoutId: NodeJS.Timeout | null = null;
-    let isAnimationActive = false;
-
-    // when you need to stop the animation, call this function
-    const stopAnimation = () => {
-      isAnimationActive = false;
-      if (animationTimeoutId !== null) {
-        clearTimeout(animationTimeoutId);
-        animationTimeoutId = null;
+    try {
+      const id = await messageService.createMessage(message);
+      if (!context?.skipRefresh) {
+        internal_toggleMessageLoading(true, tempId);
+        await refreshMessages();
       }
-    };
 
-    // define startAnimation function to display the text in buffer smooth
-    // when you need to start the animation, call this function
-    const startAnimation = (speed = 2) =>
-      new Promise<void>((resolve) => {
-        if (isAnimationActive) {
-          resolve();
-          return;
-        }
-
-        isAnimationActive = true;
-
-        const updateText = () => {
-          // 如果动画已经不再激活，则停止更新文本
-          if (!isAnimationActive) {
-            clearTimeout(animationTimeoutId!);
-            animationTimeoutId = null;
-            resolve();
-          }
-
-          // 如果还有文本没有显示
-          // 检查队列中是否有字符待显示
-          if (outputQueue.length > 0) {
-            // 从队列中获取前两个字符（如果存在）
-            const charsToAdd = outputQueue.splice(0, speed).join('');
-            buffer += charsToAdd;
-
-            // 更新消息内容，这里可能需要结合实际情况调整
-            dispatchMessage({ id, key: 'content', type: 'updateMessage', value: buffer });
-
-            // 设置下一个字符的延迟
-            animationTimeoutId = setTimeout(updateText, 16); // 16 毫秒的延迟模拟打字机效果
-          } else {
-            // 当所有字符都显示完毕时，清除动画状态
-            isAnimationActive = false;
-            animationTimeoutId = null;
-            resolve();
-          }
-        };
-
-        updateText();
+      internal_toggleMessageLoading(false, tempId);
+      return id;
+    } catch (e) {
+      internal_toggleMessageLoading(false, tempId);
+      internal_dispatchMessage({
+        id: tempId,
+        type: 'updateMessage',
+        value: {
+          error: { type: ChatErrorType.CreateMessageError, message: (e as Error).message, body: e },
+        },
       });
-
-    return { startAnimation, stopAnimation, outputQueue, isAnimationActive };
+    }
   },
 
-  internalTraceMessage: async (id, payload) => {
+  internal_fetchMessages: async () => {
+    const messages = await messageService.getMessages(get().activeId, get().activeTopicId);
+    const nextMap = { ...get().messagesMap, [chatSelectors.currentChatKey(get())]: messages };
+    // no need to update map if the messages have been init and the map is the same
+    if (get().messagesInit && isEqual(nextMap, get().messagesMap)) return;
+
+    set(
+      { messagesInit: true, messagesMap: nextMap },
+      false,
+      n('internal_fetchMessages', { messages }),
+    );
+  },
+  internal_createTmpMessage: (message) => {
+    const { internal_dispatchMessage } = get();
+
+    // use optimistic update to avoid the slow waiting
+    const tempId = 'tmp_' + nanoid();
+    internal_dispatchMessage({ type: 'createMessage', id: tempId, value: message });
+
+    return tempId;
+  },
+  internal_deleteMessage: async (id: string) => {
+    get().internal_dispatchMessage({ type: 'deleteMessage', id });
+    await messageService.removeMessage(id);
+    await get().refreshMessages();
+  },
+  internal_traceMessage: async (id, payload) => {
     // tracing the diff of update
     const message = chatSelectors.getMessageById(id)(get());
     if (!message) return;
@@ -623,6 +401,49 @@ export const chatMessage: StateCreator<
       traceService
         .traceEvent({ traceId, observationId, content: message.content, ...payload })
         .catch();
+    }
+  },
+
+  // ----- Loading ------- //
+  internal_toggleMessageLoading: (loading, id) => {
+    set(
+      {
+        messageLoadingIds: toggleBooleanList(get().messageLoadingIds, id, loading),
+      },
+      false,
+      `internal_toggleMessageLoading/${loading ? 'start' : 'end'}`,
+    );
+  },
+  internal_toggleLoadingArrays: (key, loading, id, action) => {
+    const abortControllerKey = `${key}AbortController`;
+    if (loading) {
+      window.addEventListener('beforeunload', preventLeavingFn);
+
+      const abortController = new AbortController();
+      set(
+        {
+          [abortControllerKey]: abortController,
+          [key]: toggleBooleanList(get()[key] as string[], id!, loading),
+        },
+        false,
+        action,
+      );
+
+      return abortController;
+    } else {
+      if (!id) {
+        set({ [abortControllerKey]: undefined, [key]: [] }, false, action);
+      } else
+        set(
+          {
+            [abortControllerKey]: undefined,
+            [key]: toggleBooleanList(get()[key] as string[], id, loading),
+          },
+          false,
+          action,
+        );
+
+      window.removeEventListener('beforeunload', preventLeavingFn);
     }
   },
 });

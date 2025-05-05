@@ -1,9 +1,10 @@
+import { DeepPartial } from 'utility-types';
 import { Mock, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ShareGPTConversation } from '@/types/share';
-import { parseMarkdown } from '@/utils/parseMarkdown';
+import { LOBE_URL_IMPORT_NAME } from '@/const/url';
+import { UserSettings } from '@/types/user/settings';
 
-import { SHARE_GPT_URL, shareGPTService } from '../share';
+import { shareService } from '../share';
 
 // Mock dependencies
 vi.mock('@/utils/parseMarkdown', () => ({
@@ -12,75 +13,49 @@ vi.mock('@/utils/parseMarkdown', () => ({
 
 global.fetch = vi.fn();
 
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 describe('ShareGPTService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should create and return a ShareGPT URL when fetch is successful', async () => {
-    // Arrange
-    const mockId = '123abc';
-    const conversation: ShareGPTConversation = {
-      items: [
-        { from: 'human', value: 'Hello' },
-        { from: 'gpt', value: 'Hi there!' },
-      ],
-    };
-    (parseMarkdown as Mock).mockResolvedValue('Parsed markdown');
-    (fetch as Mock).mockResolvedValue({
-      json: () => Promise.resolve({ id: mockId }),
+  describe('ShareViaUrl', () => {
+    describe('createShareSettingsUrl', () => {
+      it('should create a share settings URL with the provided settings', () => {
+        const settings: DeepPartial<UserSettings> = {
+          keyVaults: {
+            openai: {
+              apiKey: 'user-key',
+            },
+          },
+        };
+        const url = shareService.createShareSettingsUrl(settings);
+        expect(url).toBe(
+          `/?${LOBE_URL_IMPORT_NAME}=%7B%22keyVaults%22:%7B%22openai%22:%7B%22apiKey%22:%22user-key%22%7D%7D%7D`,
+        );
+      });
     });
 
-    // Act
-    const url = await shareGPTService.createShareGPTUrl(conversation);
+    describe('decodeShareSettings', () => {
+      it('should decode share settings from search params', () => {
+        const settings = '{"languageModel":{"openai":{"apiKey":"user-key"}}}';
+        const decodedSettings = shareService.decodeShareSettings(settings);
+        expect(decodedSettings).toEqual({
+          data: {
+            languageModel: {
+              openai: {
+                apiKey: 'user-key',
+              },
+            },
+          },
+        });
+      });
 
-    // Assert
-    expect(parseMarkdown).toHaveBeenCalledWith('Hi there!');
-    expect(fetch).toHaveBeenCalledWith(SHARE_GPT_URL, expect.anything());
-    expect(url).toBe(`https://shareg.pt/${mockId}`);
-  });
-
-  it('should throw an error when the fetch call fails', async () => {
-    // Arrange
-    const conversation: ShareGPTConversation = {
-      items: [{ from: 'human', value: 'Hello' }],
-    };
-    (fetch as Mock).mockRejectedValue(new Error('Network error'));
-
-    // Act & Assert
-    await expect(shareGPTService.createShareGPTUrl(conversation)).rejects.toThrow('Network error');
-  });
-
-  it('should not parse markdown for items not from gpt', async () => {
-    // Arrange
-    const mockId = '123abc';
-    const conversation: ShareGPTConversation = {
-      items: [
-        { from: 'human', value: 'Hello' },
-        { from: 'human', value: 'How are you?' },
-      ],
-    };
-    (fetch as Mock).mockResolvedValue({
-      json: () => Promise.resolve({ id: mockId }),
+      it('should return an error message if decoding fails', () => {
+        const settings = '%7B%22theme%22%3A%22dark%22%2C%22fontSize%22%3A16%';
+        const decodedSettings = shareService.decodeShareSettings(settings);
+        expect(decodedSettings).toEqual({
+          message: expect.any(String),
+        });
+      });
     });
-
-    // Act
-    await shareGPTService.createShareGPTUrl(conversation);
-
-    // Assert
-    expect(parseMarkdown).not.toHaveBeenCalled();
-  });
-
-  it('should throw an error if the response does not contain an id', async () => {
-    // Arrange
-    const conversation: ShareGPTConversation = {
-      items: [{ from: 'human', value: 'Hello' }],
-    };
-    (fetch as Mock).mockResolvedValue({
-      json: () => Promise.resolve({}),
-    });
-
-    // Act & Assert
-    await expect(shareGPTService.createShareGPTUrl(conversation)).rejects.toThrow();
   });
 });

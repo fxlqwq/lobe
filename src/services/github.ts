@@ -20,6 +20,40 @@ class GitHubService {
 
     window.open(url, '_blank');
   };
+
+  submitImportError = (error?: { message: string }) => {
+    const body = ['```json', JSON.stringify(error, null, 2), '```'].join('\n');
+
+    const message = error?.message || '';
+
+    const url = qs.stringifyUrl({
+      query: {
+        body,
+        labels: '❌ Import Config Error',
+        title: `[Config Import Error] ${message}`,
+      },
+      url: urlJoin(GITHUB, '/issues/new'),
+    });
+
+    window.open(url, '_blank');
+  };
+
+  submitPgliteInitError = (error?: { message: string }) => {
+    const body = ['```json', JSON.stringify(error, null, 2), '```'].join('\n');
+
+    const message = error?.message || '';
+
+    const url = qs.stringifyUrl({
+      query: {
+        body,
+        labels: '❌ Database Init Error',
+        title: `[Database Init Error] ${message}`,
+      },
+      url: urlJoin(GITHUB, '/issues/new'),
+    });
+
+    window.open(url, '_blank');
+  };
 }
 
 export const githubService = new GitHubService();

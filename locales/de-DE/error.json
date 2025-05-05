@@ -1,4 +1,41 @@
 {
+  "clerkAuth": {
+    "loginSuccess": {
+      "action": "Weitermachen",
+      "desc": "{{greeting}}, es freut mich, dass ich dir weiterhelfen kann. Lass uns das Gespräch fortsetzen.",
+      "title": "Willkommen zurück, {{nickName}}"
+    }
+  },
+  "error": {
+    "backHome": "Zurück zur Startseite",
+    "desc": "Versuchen Sie es später erneut oder kehren Sie in die bekannte Welt zurück",
+    "retry": "Erneut laden",
+    "title": "Ein Problem ist aufgetreten auf der Seite.."
+  },
+  "fetchError": {
+    "detail": "Fehlerdetails",
+    "title": "Anfrage fehlgeschlagen"
+  },
+  "import": {
+    "importConfigFile": {
+      "description": "Fehlerursache: {{reason}}",
+      "title": "Import fehlgeschlagen"
+    },
+    "incompatible": {
+      "description": "Diese Datei wurde aus einer höheren Version exportiert. Bitte versuchen Sie, auf die neueste Version zu aktualisieren und dann erneut zu importieren.",
+      "title": "Die aktuelle Anwendung unterstützt den Import dieser Datei nicht"
+    }
+  },
+  "loginRequired": {
+    "desc": "Sie werden in Kürze zur Anmeldeseite weitergeleitet",
+    "title": "Bitte melden Sie sich an, um diese Funktion zu nutzen"
+  },
+  "notFound": {
+    "backHome": "Zurück zur Startseite",
+    "check": "Bitte überprüfen Sie, ob Ihre URL korrekt ist.",
+    "desc": "Die von Ihnen gesuchte Seite konnte nicht gefunden werden.",
+    "title": "In unbekanntes Gebiet geraten?"
+  },
   "pluginSettings": {
     "desc": "Führen Sie die folgende Konfiguration durch, um das Plugin zu verwenden",
     "title": "{{name}} Plugin-Konfiguration"
@@ -29,41 +66,42 @@
     "429": "Entschuldigung, Ihre Anfrage ist zu häufig. Der Server ist etwas überlastet. Bitte versuchen Sie es später erneut",
     "431": "Entschuldigung, der Header Ihrer Anfrage ist zu groß und kann vom Server nicht verarbeitet werden",
     "451": "Entschuldigung, aus rechtlichen Gründen verweigert der Server die Bereitstellung dieser Ressource",
+    "499": "Es tut uns leid, Ihre Anfrage wurde unerwartet unterbrochen, während sie vom Server verarbeitet wurde. Dies könnte daran liegen, dass Sie die Aktion manuell abgebrochen haben oder die Netzwerkverbindung instabil ist. Bitte überprüfen Sie den Netzwerkstatus und versuchen Sie es erneut.",
     "500": "Entschuldigung, der Server hat anscheinend einige Schwierigkeiten und kann Ihre Anfrage vorübergehend nicht bearbeiten. Bitte versuchen Sie es später erneut",
+    "501": "Es tut uns leid, der Server weiß noch nicht, wie er diese Anfrage bearbeiten soll. Bitte überprüfen Sie, ob Ihre Aktion korrekt ist.",
     "502": "Entschuldigung, der Server scheint die Orientierung verloren zu haben und kann vorübergehend keinen Service bereitstellen. Bitte versuchen Sie es später erneut",
     "503": "Entschuldigung, der Server kann Ihre Anfrage derzeit nicht verarbeiten. Möglicherweise aufgrund von Überlastung oder Wartungsarbeiten. Bitte versuchen Sie es später erneut",
     "504": "Entschuldigung, der Server hat keine Antwort vom Upstream-Server erhalten. Bitte versuchen Sie es später erneut",
+    "505": "Es tut uns leid, der Server unterstützt die von Ihnen verwendete HTTP-Version nicht. Bitte aktualisieren Sie und versuchen Sie es erneut.",
+    "506": "Es tut uns leid, es gibt ein Problem mit der Serverkonfiguration. Bitte wenden Sie sich an den Administrator, um das Problem zu lösen.",
+    "507": "Es tut uns leid, der Server hat nicht genügend Speicherplatz, um Ihre Anfrage zu bearbeiten. Bitte versuchen Sie es später erneut.",
+    "509": "Es tut uns leid, die Bandbreite des Servers ist erschöpft. Bitte versuchen Sie es später erneut.",
+    "510": "Es tut uns leid, der Server unterstützt die angeforderte Erweiterungsfunktion nicht. Bitte wenden Sie sich an den Administrator.",
+    "520": "Es tut uns leid, der Server hat ein unerwartetes Problem festgestellt, das die Erfüllung Ihrer Anfrage verhindert. Bitte versuchen Sie es später erneut, wir arbeiten daran, dieses Problem zu beheben.",
+    "522": "Es tut uns leid, die Serververbindung hat aufgrund einer Zeitüberschreitung nicht rechtzeitig auf Ihre Anfrage reagiert. Möglicherweise ist das Netzwerk instabil oder der Server vorübergehend nicht erreichbar. Bitte versuchen Sie es später erneut, wir arbeiten daran, den Dienst wiederherzustellen.",
+    "524": "Es tut uns leid, der Server hat beim Warten auf eine Antwort eine Zeitüberschreitung erreicht, möglicherweise aufgrund einer langsamen Antwort. Bitte versuchen Sie es später erneut.",
     "AgentRuntimeError": "Es ist ein Fehler bei der Ausführung des Lobe-Sprachmodells aufgetreten. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "AnthropicBizError": "Fehler beim Anfordern des Anthropic AI-Dienstes. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "AzureBizError": "Es ist ein Fehler bei der Anforderung des Azure AI-Dienstes aufgetreten. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "BedrockBizError": "Es ist ein Fehler bei der Anforderung des Bedrock-Dienstes aufgetreten. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "GoogleBizError": "Es ist ein Fehler bei der Anforderung des Google-Dienstes aufgetreten. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "GroqBizError": "Die Anfrage an den Groq-Dienst ist fehlgeschlagen. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
+    "ConnectionCheckFailed": "Die Anfrage brachte eine leere Antwort zurück. Bitte überprüfen Sie, ob die API-Proxy-Adresse am Ende nicht mit `/v1` endet.",
+    "CreateMessageError": "Es tut uns leid, die Nachricht konnte nicht erfolgreich gesendet werden. Bitte kopieren Sie den Inhalt und senden Sie ihn erneut. Nach dem Aktualisieren der Seite wird diese Nachricht nicht gespeichert.",
+    "ExceededContextWindow": "Der aktuelle Anfrageinhalt überschreitet die von dem Modell verarbeitbare Länge. Bitte reduzieren Sie die Menge des Inhalts und versuchen Sie es erneut.",
+    "FreePlanLimit": "Sie sind derzeit ein kostenloser Benutzer und können diese Funktion nicht nutzen. Bitte aktualisieren Sie auf ein kostenpflichtiges Abonnement, um fortzufahren.",
+    "InsufficientQuota": "Es tut uns leid, das Kontingent (Quota) für diesen Schlüssel ist erreicht. Bitte überprüfen Sie Ihr Kontoguthaben oder erhöhen Sie das Kontingent des Schlüssels und versuchen Sie es erneut.",
     "InvalidAccessCode": "Das Passwort ist ungültig oder leer. Bitte geben Sie das richtige Zugangspasswort ein oder fügen Sie einen benutzerdefinierten API-Schlüssel hinzu.",
-    "InvalidAnthropicAPIKey": "Ungültiger oder leerer Anthropic API-Schlüssel. Bitte überprüfen Sie den Anthropic API-Schlüssel und versuchen Sie es erneut.",
-    "InvalidAzureAPIKey": "Der Azure API-Schlüssel ist ungültig oder leer. Bitte überprüfen Sie den Azure API-Schlüssel und versuchen Sie es erneut.",
     "InvalidBedrockCredentials": "Die Bedrock-Authentifizierung ist fehlgeschlagen. Bitte überprüfen Sie AccessKeyId/SecretAccessKey und versuchen Sie es erneut.",
-    "InvalidGoogleAPIKey": "Der Google API-Schlüssel ist ungültig oder leer. Bitte überprüfen Sie den Google API-Schlüssel und versuchen Sie es erneut.",
-    "InvalidGroqAPIKey": "Der Groq API-Schlüssel ist ungültig oder leer. Bitte überprüfen Sie den Groq API-Schlüssel und versuchen Sie es erneut.",
-    "InvalidMistralAPIKey": "Der Mistral AI-API-Schlüssel ist ungültig oder leer. Bitte überprüfen Sie den Mistral-API-Schlüssel und versuchen Sie es erneut.",
-    "InvalidMoonshotAPIKey": "Ungültiger oder leerer Moonshot AI API-Schlüssel. Bitte überprüfen Sie den Moonshot API-Schlüssel und versuchen Sie es erneut.",
+    "InvalidClerkUser": "Entschuldigung, du bist derzeit nicht angemeldet. Bitte melde dich an oder registriere ein Konto, um fortzufahren.",
+    "InvalidGithubToken": "Der persönliche Zugriffstoken für Github ist ungültig oder leer. Bitte überprüfen Sie den persönlichen Zugriffstoken für Github und versuchen Sie es erneut.",
     "InvalidOllamaArgs": "Ollama-Konfiguration ist ungültig. Bitte überprüfen Sie die Ollama-Konfiguration und versuchen Sie es erneut.",
-    "InvalidOpenRouterAPIKey": "OpenRouter API-Schlüssel ungültig oder leer. Bitte überprüfen Sie den OpenRouter API-Schlüssel und versuchen Sie es erneut.",
-    "InvalidPerplexityAPIKey": "Perplexity API Key ist ungültig oder leer. Bitte überprüfen Sie den Perplexity API Key und versuchen Sie es erneut.",
-    "InvalidTogetherAIAPIKey": "TogetherAI API-Schlüssel ungültig oder leer. Bitte überprüfen Sie den TogetherAI API-Schlüssel und versuchen Sie es erneut.",
-    "InvalidZeroOneAPIKey": "Ungültiger oder leerer ZeroOne-API-Schlüssel. Bitte überprüfen Sie den ZeroOne-API-Schlüssel und versuchen Sie es erneut.",
-    "InvalidZhipuAPIKey": "Der Zhipu API-Schlüssel ist ungültig oder leer. Bitte überprüfen Sie den Zhipu API-Schlüssel und versuchen Sie es erneut.",
+    "InvalidProviderAPIKey": "{{provider}} API-Schlüssel ist ungültig oder leer. Bitte überprüfen Sie den {{provider}} API-Schlüssel und versuchen Sie es erneut.",
+    "InvalidVertexCredentials": "Die Vertex-Authentifizierung ist fehlgeschlagen. Bitte überprüfen Sie Ihre Authentifizierungsdaten und versuchen Sie es erneut.",
     "LocationNotSupportError": "Entschuldigung, Ihr Standort unterstützt diesen Modellservice möglicherweise aufgrund von regionalen Einschränkungen oder nicht aktivierten Diensten nicht. Bitte überprüfen Sie, ob der aktuelle Standort die Verwendung dieses Dienstes unterstützt, oder versuchen Sie, andere Standortinformationen zu verwenden.",
-    "MistralBizError": "Beim Anfordern des Mistral AI-Dienstes ist ein Fehler aufgetreten. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "MoonshotBizError": "Fehler beim Abrufen des Dark Side of the Moon-Services. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
+    "ModelNotFound": "Es tut uns leid, das angeforderte Modell konnte nicht gefunden werden. Möglicherweise existiert das Modell nicht oder es liegen keine Zugriffsrechte vor. Bitte ändern Sie den API-Schlüssel oder passen Sie die Zugriffsrechte an und versuchen Sie es erneut.",
     "NoOpenAIAPIKey": "Der OpenAI-API-Schlüssel ist leer. Bitte fügen Sie einen benutzerdefinierten OpenAI-API-Schlüssel hinzu",
     "OllamaBizError": "Fehler bei der Anforderung des Ollama-Dienstes. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "OllamaServiceUnavailable": "Ollama-Dienst nicht verfügbar. Bitte überprüfen Sie, ob er ordnungsgemäß gestartet wurde.",
-    "OpenAIBizError": "Fehler bei der OpenAI-Serviceanfrage. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut",
-    "OpenRouterBizError": "Fehler bei der Anforderung des OpenRouter AI-Dienstes. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "PerplexityBizError": "Fehler bei der Anforderung des Perplexity AI-Dienstes. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
+    "OllamaServiceUnavailable": "Der Ollama-Dienst ist nicht verfügbar. Bitte überprüfen Sie, ob Ollama ordnungsgemäß ausgeführt wird und ob die CORS-Konfiguration von Ollama korrekt ist.",
+    "PermissionDenied": "Es tut uns leid, Sie haben keine Berechtigung, auf diesen Dienst zuzugreifen. Bitte überprüfen Sie, ob Ihr Schlüssel die erforderlichen Zugriffsrechte hat.",
     "PluginApiNotFound": "Entschuldigung, das API des Plugins im Plugin-Manifest existiert nicht. Bitte überprüfen Sie, ob Ihre Anfragemethode mit dem Plugin-Manifest-API übereinstimmt",
     "PluginApiParamsError": "Entschuldigung, die Eingabeüberprüfung der Plugin-Anfrage ist fehlgeschlagen. Bitte überprüfen Sie, ob die Eingabe mit den API-Beschreibungsinformationen übereinstimmt",
+    "PluginFailToTransformArguments": "Es tut uns leid, die Plugin-Aufrufargumente konnten nicht transformiert werden. Bitte versuchen Sie, die Assistentennachricht erneut zu generieren, oder wechseln Sie zu einem leistungsstärkeren AI-Modell mit Tools Calling-Fähigkeiten und versuchen Sie es erneut.",
     "PluginGatewayError": "Entschuldigung, es ist ein Fehler im Plugin-Gateway aufgetreten. Bitte überprüfen Sie die Plugin-Gateway-Konfiguration auf Richtigkeit",
     "PluginManifestInvalid": "Entschuldigung, das Manifest des Plugins hat die Überprüfung nicht bestanden. Bitte überprüfen Sie das Format des Manifests",
     "PluginManifestNotFound": "Entschuldigung, der Server konnte das Manifest (manifest.json) des Plugins nicht finden. Bitte überprüfen Sie die Adresse der Plugin-Beschreibungsdatei",
@@ -74,9 +112,13 @@
     "PluginOpenApiInitError": "Entschuldigung, die Initialisierung des OpenAPI-Clients ist fehlgeschlagen. Bitte überprüfen Sie die Konfigurationsinformationen des OpenAPI auf Richtigkeit",
     "PluginServerError": "Fehler bei der Serveranfrage des Plugins. Bitte überprüfen Sie die Fehlerinformationen unten in Ihrer Plugin-Beschreibungsdatei, Plugin-Konfiguration oder Serverimplementierung",
     "PluginSettingsInvalid": "Das Plugin muss korrekt konfiguriert werden, um verwendet werden zu können. Bitte überprüfen Sie Ihre Konfiguration auf Richtigkeit",
-    "TogetherAIBizError": "Fehler bei der Anforderung des TogetherAI AI-Dienstes. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "ZeroOneBizError": "Anfrage an ZeroOneBiz-Dienst fehlgeschlagen. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
-    "ZhipuBizError": "Es ist ein Fehler bei der Anforderung des Zhipu-Dienstes aufgetreten. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut."
+    "ProviderBizError": "Fehler bei der Anforderung des {{provider}}-Dienstes. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut.",
+    "QuotaLimitReached": "Es tut uns leid, die aktuelle Token-Nutzung oder die Anzahl der Anfragen hat das Kontingent (Quota) für diesen Schlüssel erreicht. Bitte erhöhen Sie das Kontingent für diesen Schlüssel oder versuchen Sie es später erneut.",
+    "StreamChunkError": "Fehler beim Parsen des Nachrichtenchunks der Streaming-Anfrage. Bitte überprüfen Sie, ob die aktuelle API-Schnittstelle den Standards entspricht, oder wenden Sie sich an Ihren API-Anbieter.",
+    "SubscriptionKeyMismatch": "Es tut uns leid, aufgrund eines vorübergehenden Systemfehlers ist das aktuelle Abonnement vorübergehend ungültig. Bitte klicken Sie auf die Schaltfläche unten, um das Abonnement wiederherzustellen, oder kontaktieren Sie uns per E-Mail für Unterstützung.",
+    "SubscriptionPlanLimit": "Ihr Abonnementspunktestand ist erschöpft, Sie können diese Funktion nicht nutzen. Bitte upgraden Sie auf einen höheren Plan oder konfigurieren Sie die benutzerdefinierte Modell-API, um weiterhin zu verwenden.",
+    "SystemTimeNotMatchError": "Es tut uns leid, Ihre Systemzeit stimmt nicht mit dem Server überein. Bitte überprüfen Sie Ihre Systemzeit und versuchen Sie es erneut.",
+    "UnknownChatFetchError": "Es tut uns leid, es ist ein unbekannter Anforderungsfehler aufgetreten. Bitte überprüfen Sie die folgenden Informationen oder versuchen Sie es erneut."
   },
   "stt": {
     "responseError": "Serviceanfrage fehlgeschlagen. Bitte überprüfen Sie die Konfiguration oder versuchen Sie es erneut"
@@ -85,67 +127,13 @@
     "responseError": "Serviceanfrage fehlgeschlagen. Bitte überprüfen Sie die Konfiguration oder versuchen Sie es erneut"
   },
   "unlock": {
-    "apikey": {
-      "Anthropic": {
-        "description": "Geben Sie Ihren Anthropic API-Schlüssel ein, um die Sitzung zu starten. Die Anwendung speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden Sie einen benutzerdefinierten Anthropic API-Schlüssel"
-      },
-      "Bedrock": {
-        "customRegion": "Benutzerdefinierte Region",
-        "description": "Geben Sie Ihre AWS AccessKeyId / SecretAccessKey ein, um die Sitzung zu starten. Die Anwendung speichert Ihre Authentifizierungsinformationen nicht.",
-        "title": "Verwenden von benutzerdefinierten Bedrock-Authentifizierungsinformationen"
-      },
-      "Google": {
-        "description": "Geben Sie Ihren Google API-Schlüssel ein, um die Sitzung zu starten. Die Anwendung speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden von benutzerdefinierten Google API-Schlüssel"
-      },
-      "Groq": {
-        "description": "Geben Sie Ihren individuellen Groq-API-Schlüssel ein, um die Sitzung zu starten. Die Anwendung speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden Sie einen benutzerdefinierten Groq-API-Schlüssel"
-      },
-      "Mistral": {
-        "description": "Geben Sie Ihren eigenen Mistral AI-API-Schlüssel ein, um die Sitzung zu starten. Die App speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden Sie einen benutzerdefinierten Mistral AI-API-Schlüssel"
-      },
-      "Moonshot": {
-        "description": "Geben Sie Ihren individuellen Moonshot AI API-Schlüssel ein, um die Sitzung zu starten. Die App speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden Sie einen benutzerdefinierten Moonshot AI API-Schlüssel"
-      },
-      "OpenAI": {
-        "addProxyUrl": "Proxy-URL hinzufügen (optional)",
-        "description": "Geben Sie Ihren OpenAI API-Schlüssel ein, um die Sitzung zu starten. Die Anwendung speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden von benutzerdefinierten OpenAI API-Schlüssel"
-      },
-      "OpenRouter": {
-        "description": "Geben Sie Ihren OpenRouter API-Schlüssel ein, um die Sitzung zu starten. Die App speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden Sie einen benutzerdefinierten OpenRouter API-Schlüssel"
-      },
-      "Perplexity": {
-        "description": "Geben Sie Ihren eigenen Perplexity API Key ein, um das Gespräch zu beginnen. Die App speichert Ihren API Key nicht.",
-        "title": "Verwenden Sie einen benutzerdefinierten Perplexity API Key"
-      },
-      "TogetherAI": {
-        "description": "Geben Sie Ihren TogetherAI API-Schlüssel ein, um die Sitzung zu starten. Die App speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden Sie einen benutzerdefinierten TogetherAI API-Schlüssel"
-      },
-      "ZeroOne": {
-        "description": "Geben Sie Ihren benutzerdefinierten ZeroOne-API-Schlüssel ein, um die Sitzung zu starten. Die App speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden Sie einen benutzerdefinierten ZeroOne-API-Schlüssel"
-      },
-      "Zhipu": {
-        "description": "Geben Sie Ihren Zhipu API-Schlüssel ein, um die Sitzung zu starten. Die Anwendung speichert Ihren API-Schlüssel nicht.",
-        "title": "Verwenden von benutzerdefinierten Zhipu API-Schlüssel"
-      }
+    "addProxyUrl": "Fügen Sie die OpenAI-Proxy-URL hinzu (optional)",
+    "apiKey": {
+      "description": "Geben Sie Ihren {{name}} API-Schlüssel ein, um die Sitzung zu starten.",
+      "title": "Verwenden Sie Ihren benutzerdefinierten {{name}} API-Schlüssel"
     },
     "closeMessage": "Hinweis schließen",
     "confirm": "Bestätigen und erneut versuchen",
-    "model": {
-      "Ollama": {
-        "confirm": "Herunterladen",
-        "description": "Geben Sie Ihre Ollama-Modellbezeichnung ein, um fortzufahren",
-        "title": "Bestimmtes Ollama-Modell herunterladen"
-      }
-    },
     "oauth": {
       "description": "Der Administrator hat die einheitliche Anmeldeauthentifizierung aktiviert. Klicken Sie unten auf die Schaltfläche, um sich anzumelden und die App zu entsperren.",
       "success": "Anmeldung erfolgreich",
@@ -161,5 +149,13 @@
       "apiKey": "Benutzerdefinierter API-Schlüssel",
       "password": "Passwort"
     }
+  },
+  "upload": {
+    "desc": "Details: {{detail}}",
+    "fileOnlySupportInServerMode": "Der aktuelle Bereitstellungsmodus unterstützt das Hochladen von Nicht-Bilddateien nicht. Um Dateien im {{ext}}-Format hochzuladen, wechseln Sie bitte zum Serverdatenbank-Bereitstellungsmodus oder verwenden Sie den {{cloud}}-Dienst.",
+    "networkError": "Bitte überprüfen Sie, ob Ihre Internetverbindung stabil ist, und prüfen Sie die Cross-Origin-Konfiguration des Dateispeicherdienstes.",
+    "title": "Dateiupload fehlgeschlagen. Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es später erneut.",
+    "unknownError": "Fehlerursache: {{reason}}",
+    "uploadFailed": "Der Datei-Upload ist fehlgeschlagen."
   }
 }

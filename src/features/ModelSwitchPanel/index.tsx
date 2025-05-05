@@ -1,14 +1,21 @@
-import { Dropdown } from 'antd';
+import { ActionIcon, Icon } from '@lobehub/ui';
 import { createStyles } from 'antd-style';
-import isEqual from 'fast-deep-equal';
+import type { ItemType } from 'antd/es/menu/interface';
+import { LucideArrowRight, LucideBolt } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PropsWithChildren, memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Flexbox } from 'react-layout-kit';
 
 import { ModelItemRender, ProviderItemRender } from '@/components/ModelSelect';
-import { useGlobalStore } from '@/store/global';
-import { modelProviderSelectors } from '@/store/global/selectors';
-import { useSessionStore } from '@/store/session';
-import { agentSelectors } from '@/store/session/selectors';
-import { ModelProviderCard } from '@/types/llm';
+import { isDeprecatedEdition } from '@/const/version';
+import ActionDropdown from '@/features/ChatInput/ActionBar/components/ActionDropdown';
+import { useEnabledChatModels } from '@/hooks/useEnabledChatModels';
+import { useAgentStore } from '@/store/agent';
+import { agentSelectors } from '@/store/agent/slices/chat';
+import { featureFlagsSelectors, useServerConfigStore } from '@/store/serverConfig';
+import { EnabledProviderWithModels } from '@/types/aiProvider';
 
 const useStyles = createStyles(({ css, prefixCls }) => ({
   menu: css`
@@ -31,55 +38,127 @@ const useStyles = createStyles(({ css, prefixCls }) => ({
   `,
 }));
 
-const ModelSwitchPanel = memo<PropsWithChildren>(({ children }) => {
-  const { styles } = useStyles();
-  const model = useSessionStore(agentSelectors.currentAgentModel);
-  const updateAgentConfig = useSessionStore((s) => s.updateAgentConfig);
+const menuKey = (provider: string, model: string) => `${provider}-${model}`;
 
-  const select = useGlobalStore(modelProviderSelectors.modelSelectList, isEqual);
-  const enabledList = select.filter((s) => s.enabled);
+const ModelSwitchPanel = memo<
+  PropsWithChildren<{
+    onOpenChange?: (open: boolean) => void;
+    open?: boolean;
+    setUpdating?: (updating: boolean) => void;
+    updating?: boolean;
+  }>
+>(({ children, setUpdating, onOpenChange, open }) => {
+  const { t } = useTranslation('components');
+  const { styles, theme } = useStyles();
+  const [model, provider, updateAgentConfig] = useAgentStore((s) => [
+    agentSelectors.currentAgentModel(s),
+    agentSelectors.currentAgentModelProvider(s),
+    s.updateAgentConfig,
+  ]);
+  const { showLLM } = useServerConfigStore(featureFlagsSelectors);
+  const router = useRouter();
+  const enabledList = useEnabledChatModels();
 
-  const items = useMemo(() => {
-    const getModelItems = (provider: ModelProviderCard) =>
-      provider.chatModels
-        .filter((c) => !c.hidden)
-        .map((model) => ({
-          key: model.id,
-          label: <ModelItemRender {...model} />,
-          onClick: () => {
-            updateAgentConfig({ model: model.id, provider: provider.id });
+  const items = useMemo<ItemType[]>(() => {
+    const getModelItems = (provider: EnabledProviderWithModels) => {
+      const items = provider.children.map((model) => ({
+        key: menuKey(provider.id, model.id),
+        label: <ModelItemRender {...model} {...model.abilities} />,
+        onClick: async () => {
+          setUpdating?.(true);
+          await updateAgentConfig({ model: model.id, provider: provider.id });
+          setUpdating?.(false);
+        },
+      }));
+
+      // if there is empty items, add a placeholder guide
+      if (items.length === 0)
+        return [
+          {
+            key: `${provider.id}-empty`,
+            label: (
+              <Flexbox gap={8} horizontal style={{ color: theme.colorTextTertiary }}>
+                {t('ModelSwitchPanel.emptyModel')}
+                <Icon icon={LucideArrowRight} />
+              </Flexbox>
+            ),
+            onClick: () => {
+              router.push(
+                isDeprecatedEdition ? '/settings/llm' : `/settings/provider/${provider.id}`,
+              );
+            },
           },
-        }));
+        ];
 
-    if (enabledList.length === 1) {
-      const provider = enabledList[0];
-      return getModelItems(provider);
-    }
+      return items;
+    };
 
+    if (enabledList.length === 0)
+      return [
+        {
+          key: `no-provider`,
+          label: (
+            <Flexbox gap={8} horizontal style={{ color: theme.colorTextTertiary }}>
+              {t('ModelSwitchPanel.emptyProvider')}
+              <Icon icon={LucideArrowRight} />
+            </Flexbox>
+          ),
+          onClick: () => {
+            router.push(isDeprecatedEdition ? '/settings/llm' : `/settings/provider`);
+          },
+        },
+      ];
+
+    // otherwise show with provider group
     return enabledList.map((provider) => ({
       children: getModelItems(provider),
       key: provider.id,
-      label: <ProviderItemRender provider={provider.id} />,
+      label: (
+        <Flexbox horizontal justify="space-between">
+          <ProviderItemRender
+            logo={provider.logo}
+            name={provider.name}
+            provider={provider.id}
+            source={provider.source}
+          />
+          {showLLM && (
+            <Link
+              href={isDeprecatedEdition ? '/settings/llm' : `/settings/provider/${provider.id}`}
+            >
+              <ActionIcon
+                icon={LucideBolt}
+                size={'small'}
+                title={t('ModelSwitchPanel.goToSettings')}
+              />
+            </Link>
+          )}
+        </Flexbox>
+      ),
       type: 'group',
     }));
   }, [enabledList]);
 
+  const icon = <div className={styles.tag}>{children}</div>;
+
   return (
-    <Dropdown
+    <ActionDropdown
       menu={{
-        activeKey: model,
+        activeKey: menuKey(provider, model),
         className: styles.menu,
         items,
+        // 不加限高就会导致面板超长，顶部的内容会被隐藏
+        // https://github.com/user-attachments/assets/9c043c47-42c5-46ef-b5c1-bee89376f042
         style: {
           maxHeight: 500,
           overflowY: 'scroll',
         },
       }}
+      onOpenChange={onOpenChange}
+      open={open}
       placement={'topLeft'}
-      trigger={['click']}
     >
-      <div className={styles.tag}>{children}</div>
-    </Dropdown>
+      {icon}
+    </ActionDropdown>
   );
 });
 

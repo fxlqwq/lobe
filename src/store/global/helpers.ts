@@ -1,8 +1,6 @@
-import { settingsSelectors } from './slices/settings/selectors';
-import { useGlobalStore } from './store';
+import { useGlobalStore } from '@/store/global/index';
+import { globalGeneralSelectors } from '@/store/global/selectors';
 
-const getCurrentLanguage = () => settingsSelectors.currentLanguage(useGlobalStore.getState());
+const getCurrentLanguage = () => globalGeneralSelectors.currentLanguage(useGlobalStore.getState());
 
-export const globalHelpers = {
-  getCurrentLanguage,
-};
+export const globalHelpers = { getCurrentLanguage };

@@ -1,32 +1,79 @@
-import { ChatTopic } from '@/types/topic';
+import { t } from 'i18next';
 
-import { ChatStore } from '../../store';
+import { ChatTopic, ChatTopicSummary, GroupedTopic } from '@/types/topic';
+import { groupTopicsByTime } from '@/utils/client/topic';
 
-const currentTopics = (s: ChatStore): ChatTopic[] => s.topics;
+import { ChatStoreState } from '../../initialState';
 
-const currentActiveTopic = (s: ChatStore): ChatTopic | undefined => {
-  return s.topics.find((topic) => topic.id === s.activeTopicId);
+const currentTopics = (s: ChatStoreState): ChatTopic[] | undefined => s.topicMaps[s.activeId];
+
+const currentActiveTopic = (s: ChatStoreState): ChatTopic | undefined => {
+  return currentTopics(s)?.find((topic) => topic.id === s.activeTopicId);
 };
-const searchTopics = (s: ChatStore): ChatTopic[] => s.searchTopics;
+const searchTopics = (s: ChatStoreState): ChatTopic[] => s.searchTopics;
 
-const displayTopics = (s: ChatStore): ChatTopic[] =>
-  s.isSearchingTopic ? searchTopics(s) : currentTopics(s);
+const displayTopics = (s: ChatStoreState): ChatTopic[] | undefined => currentTopics(s);
 
-const currentUnFavTopics = (s: ChatStore): ChatTopic[] => s.topics.filter((s) => !s.favorite);
+const currentFavTopics = (s: ChatStoreState): ChatTopic[] =>
+  currentTopics(s)?.filter((s) => s.favorite) || [];
 
-const currentTopicLength = (s: ChatStore): number => currentTopics(s).length;
+const currentUnFavTopics = (s: ChatStoreState): ChatTopic[] =>
+  currentTopics(s)?.filter((s) => !s.favorite) || [];
+
+const currentTopicLength = (s: ChatStoreState): number => currentTopics(s)?.length || 0;
 
 const getTopicById =
   (id: string) =>
-  (s: ChatStore): ChatTopic | undefined =>
-    currentTopics(s).find((topic) => topic.id === id);
+  (s: ChatStoreState): ChatTopic | undefined =>
+    currentTopics(s)?.find((topic) => topic.id === id);
+
+const currentActiveTopicSummary = (s: ChatStoreState): ChatTopicSummary | undefined => {
+  const activeTopic = currentActiveTopic(s);
+  if (!activeTopic) return undefined;
+
+  return {
+    content: activeTopic.historySummary || '',
+    model: activeTopic.metadata?.model || '',
+    provider: activeTopic.metadata?.provider || '',
+  };
+};
+
+const isCreatingTopic = (s: ChatStoreState) => s.creatingTopic;
+const isUndefinedTopics = (s: ChatStoreState) => !currentTopics(s);
+const isInSearchMode = (s: ChatStoreState) => s.inSearchingMode;
+const isSearchingTopic = (s: ChatStoreState) => s.isSearchingTopic;
+
+const groupedTopicsSelector = (s: ChatStoreState): GroupedTopic[] => {
+  const topics = displayTopics(s);
+
+  if (!topics) return [];
+  const favTopics = currentFavTopics(s);
+  const unfavTopics = currentUnFavTopics(s);
+
+  return favTopics.length > 0
+    ? [
+        {
+          children: favTopics,
+          id: 'favorite',
+          title: t('favorite', { ns: 'topic' }),
+        },
+        ...groupTopicsByTime(unfavTopics),
+      ]
+    : groupTopicsByTime(topics);
+};
 
 export const topicSelectors = {
   currentActiveTopic,
+  currentActiveTopicSummary,
   currentTopicLength,
   currentTopics,
   currentUnFavTopics,
   displayTopics,
   getTopicById,
+  groupedTopicsSelector,
+  isCreatingTopic,
+  isInSearchMode,
+  isSearchingTopic,
+  isUndefinedTopics,
   searchTopics,
 };

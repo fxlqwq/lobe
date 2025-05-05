@@ -2,9 +2,18 @@
   "about": {
     "title": "O nas"
   },
+  "agentTab": {
+    "chat": "Preferencje czatu",
+    "meta": "Informacje o asystencie",
+    "modal": "Ustawienia modalne",
+    "opening": "Ustawienia otwarcia",
+    "plugin": "Ustawienia wtyczki",
+    "prompt": "Ustawienia roli",
+    "tts": "Usługi głosowe"
+  },
   "analytics": {
     "telemetry": {
-      "desc": "Poprzez wybór wysyłania danych telemetrycznych możesz pomóc nam poprawić ogólny użytkowy interfejs LobeChat",
+      "desc": "Wybierając wysyłanie danych telemetrycznych, możesz pomóc nam poprawić ogólne doświadczenie użytkowników {{appName}}.",
       "title": "Wysyłanie anonimowych danych użytkowych"
     },
     "title": "Analiza danych"
@@ -22,74 +31,35 @@
       "confirm": "Potwierdź zresetowanie wszystkich ustawień?",
       "currentVersion": "Aktualna wersja",
       "desc": "Zresetuj wszystkie ustawienia do wartości domyślnych",
+      "success": "Wszystkie ustawienia zostały zresetowane",
       "title": "Zresetuj wszystkie ustawienia"
     }
   },
   "header": {
+    "desc": "Preferencje i ustawienia modelu.",
     "global": "Ustawienia globalne",
     "session": "Ustawienia sesji",
-    "sessionWithName": "Ustawienia sesji · {{name}}"
+    "sessionDesc": "Ustawienia postaci i preferencje sesji.",
+    "sessionWithName": "Ustawienia sesji · {{name}}",
+    "title": "Ustawienia"
+  },
+  "hotkey": {
+    "conflicts": "Kolizja z istniejącymi skrótami klawiszowymi",
+    "group": {
+      "conversation": "Rozmowa",
+      "essential": "Podstawowy"
+    },
+    "invalidCombination": "Skrót klawiszowy musi zawierać przynajmniej jeden klawisz modyfikujący (Ctrl, Alt, Shift) oraz jeden klawisz zwykły",
+    "record": "Naciśnij klawisz, aby nagrać skrót klawiszowy",
+    "reset": "Przywróć domyślne skróty klawiszowe",
+    "title": "Skróty klawiszowe"
   },
   "llm": {
-    "anthropic": {
-      "endpoint": {
-        "desc": "Oprócz domyślnego adresu, musi zawierać http(s)://",
-        "placeholder": "https://api.anthropic.com",
-        "title": "Adres proxy API"
-      },
-      "title": "Anthropic",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od Anthropic",
-        "placeholder": "Anthropic API Key",
-        "title": "Klucz API"
-      }
-    },
-    "azure": {
-      "azureApiVersion": {
-        "desc": "Wersja API Azure, stosuj format YYYY-MM-DD, zobacz [najnowszą wersję](https://learn.microsoft.com/pl-pl/azure/ai-services/openai/reference#chat-completions)",
-        "fetch": "Pobierz listę",
-        "title": "Wersja Azure Api"
-      },
-      "deployments": {
-        "desc": "Wypełnij przy użyciu składni id=nazwa dla twoich modeli deployment (jeśli nazwa deploymentu i modelu jest taka sama, wystarczy wpisać nazwę modelu), oddzielaj modele przecinkiem (,)",
-        "title": "Lista modeli deploymentu Azure"
-      },
-      "endpoint": {
-        "desc": "Wartość można znaleźć w sekcji 'Klucze i punkty końcowe' podczas sprawdzania zasobu w portalu Azure",
-        "placeholder": "https://docs-test-001.openai.azure.com",
-        "title": "Adres API Azure"
-      },
-      "models": {
-        "desc": "Modele wspierane",
-        "title": "Lista modeli"
-      },
-      "title": "Azure OpenAI",
-      "token": {
-        "desc": "Wartość można znaleźć w sekcji 'Klucze i punkty końcowe' podczas sprawdzania zasobu w portalu Azure. Możesz użyć KEY1 lub KEY2",
-        "placeholder": "Azure API Key",
-        "title": "Klucz API"
-      }
-    },
-    "bedrock": {
-      "accessKeyId": {
-        "desc": "Wprowadź AWS Access Key Id",
-        "placeholder": "AWS Access Key Id",
-        "title": "AWS Access Key Id"
-      },
-      "checker": {
-        "desc": "Test czy AWS AccessKeyId / SecretAccessKey są poprawnie wypełnione"
-      },
-      "region": {
-        "desc": "Wprowadź AWS Region",
-        "placeholder": "AWS Region",
-        "title": "AWS Region"
-      },
-      "secretAccessKey": {
-        "desc": "Wprowadź AWS Secret Access Key",
-        "placeholder": "AWS Secret Access Key",
-        "title": "AWS Secret Access Key"
-      },
-      "title": "Bedrock"
+    "aesGcm": "Twój klucz, adres proxy i inne będą szyfrowane za pomocą algorytmu szyfrowania <1>AES-GCM</1>",
+    "apiKey": {
+      "desc": "Proszę wprowadź swój klucz API {{name}}",
+      "placeholder": "{{name}} klucz API",
+      "title": "Klucz API"
     },
     "checker": {
       "button": "Sprawdź",
@@ -97,157 +67,66 @@
       "pass": "Połączenie udane",
       "title": "Test połączenia"
     },
-    "google": {
-      "title": "Google",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od Google",
-        "placeholder": "Google API Key",
-        "title": "Klucz API"
+    "customModelCards": {
+      "addNew": "Utwórz i dodaj model {{id}}",
+      "config": "Konfiguracja modelu",
+      "confirmDelete": "Czy na pewno chcesz usunąć ten niestandardowy model? Po usunięciu nie będzie możliwe przywrócenie. Proszę działać ostrożnie.",
+      "modelConfig": {
+        "azureDeployName": {
+          "extra": "Pole faktycznego żądania w Azure OpenAI",
+          "placeholder": "Wprowadź nazwę wdrożenia modelu w Azure",
+          "title": "Nazwa wdrożenia modelu"
+        },
+        "displayName": {
+          "placeholder": "Wprowadź nazwę wyświetlaną modelu, np. ChatGPT, GPT-4 itp.",
+          "title": "Nazwa wyświetlana modelu"
+        },
+        "files": {
+          "extra": "Obecna implementacja przesyłania plików to jedynie rozwiązanie typu hack, przeznaczone wyłącznie do samodzielnego testowania. Pełna funkcjonalność przesyłania plików będzie dostępna w późniejszej wersji.",
+          "title": "Obsługa przesyłania plików"
+        },
+        "functionCall": {
+          "extra": "Ta konfiguracja włączy jedynie możliwość wywoływania funkcji w aplikacji, a to, czy wywołania funkcji będą wspierane, zależy całkowicie od samego modelu. Proszę samodzielnie przetestować dostępność wywołań funkcji w tym modelu.",
+          "title": "Obsługa wywołań funkcji"
+        },
+        "id": {
+          "extra": "Będzie wyświetlane jako etykieta modelu",
+          "placeholder": "Wprowadź identyfikator modelu, np. gpt-4-turbo-preview lub claude-2.1",
+          "title": "Identyfikator modelu"
+        },
+        "modalTitle": "Konfiguracja niestandardowego modelu",
+        "tokens": {
+          "title": "Maksymalna liczba tokenów"
+        },
+        "vision": {
+          "extra": "Ta konfiguracja włączy jedynie możliwość przesyłania obrazów w aplikacji, a to, czy rozpoznawanie będzie wspierane, zależy całkowicie od samego modelu. Proszę samodzielnie przetestować dostępność rozpoznawania wizualnego w tym modelu.",
+          "title": "Obsługa rozpoznawania wizyjnego"
+        }
       }
     },
-    "groq": {
-      "title": "Groq",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od Groq",
-        "placeholder": "Groq API Key",
-        "title": "Klucz API"
-      }
+    "fetchOnClient": {
+      "desc": "使用客户端请求模式，浏览器将直接发起会话请求，以提升响应速度",
+      "title": "使用客户端请求模式"
     },
-    "mistral": {
-      "title": "Mistral AI",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od Mistral AI",
-        "placeholder": "Mistral AI API Key",
-        "title": "Klucz API"
-      }
+    "fetcher": {
+      "clear": "Wyczyść pobrany model",
+      "fetch": "Pobierz listę modeli",
+      "fetching": "Trwa pobieranie listy modeli...",
+      "latestTime": "Ostatnia aktualizacja: {{time}}",
+      "noLatestTime": "Brak dostępnej listy"
     },
-    "moonshot": {
-      "title": "Mroczna Strona Księżyca",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od Moonshot AI",
-        "placeholder": "Moonshot AI API Key",
-        "title": "Klucz API"
-      }
+    "helpDoc": "Poradnik konfiguracji",
+    "modelList": {
+      "desc": "Wybierz modele do wyświetlenia w sesji. Wybrane modele będą widoczne na liście modeli",
+      "placeholder": "Wybierz model z listy",
+      "title": "Lista modeli",
+      "total": "Razem dostępne są {{count}} modele"
     },
-    "ollama": {
-      "checker": {
-        "desc": "Test czy adres proxy jest poprawnie wypełniony"
-      },
-      "customModelName": {
-        "desc": "Dodaj własny model, oddzielaj modele przecinkiem (,)",
-        "placeholder": "vicuna,llava,codellama,llama2:13b-text",
-        "title": "Nazwa własnego modelu"
-      },
-      "endpoint": {
-        "desc": "Wprowadź adres rest API Ollama, jeśli lokalnie nie określono, pozostaw puste",
-        "placeholder": "http://127.0.0.1:11434/v1",
-        "title": "Adres proxy API"
-      },
-      "title": "Ollama"
+    "proxyUrl": {
+      "desc": "Oprócz domyślnego adresu, musi zawierać http(s)://",
+      "title": "Adres proxy API"
     },
-    "openai": {
-      "azureApiVersion": {
-        "desc": "Wersja API Azure, stosuj format YYYY-MM-DD, zobacz [najnowszą wersję](https://learn.microsoft.com/pl-pl/azure/ai-services/openai/reference#chat-completions)",
-        "fetch": "Pobierz listę",
-        "title": "Wersja Azure Api"
-      },
-      "customModelName": {
-        "desc": "Dodaj własny model, oddzielaj modele przecinkiem (,)",
-        "placeholder": "model1,model2,model3",
-        "title": "Nazwa własnego modelu"
-      },
-      "endpoint": {
-        "desc": "Oprócz domyślnego adresu, musi zawierać http(s)://",
-        "placeholder": "https://api.openai.com/v1",
-        "title": "Adres proxy API"
-      },
-      "models": {
-        "count": "Wspiera {{count}} modeli",
-        "desc": "Modele wspierane",
-        "fetch": "Pobierz listę modeli",
-        "notSupport": "Azure OpenAI obecnie nie wspiera przeglądania listy modeli",
-        "notSupportTip": "Musisz samodzielnie upewnić się, że nazwy deploymentów są zgodne z nazwami modeli",
-        "refetch": "Pobierz ponownie listę modeli",
-        "title": "Lista modeli"
-      },
-      "title": "OpenAI",
-      "token": {
-        "desc": "Użyj własnego klucza OpenAI",
-        "placeholder": "OpenAI API Key",
-        "title": "Klucz API OpenAI"
-      },
-      "useAzure": {
-        "desc": "Użyj usługi OpenAI dostarczonej przez Azure",
-        "fetch": "Pobierz listę",
-        "serverConfig": "Administrator skonfigurował na serwerze usługę Azure OpenAI, przełączanie jest zabronione",
-        "title": "Azure OpenAI"
-      }
-    },
-    "openrouter": {
-      "checker": {
-        "desc": "Test czy adres proxy jest poprawnie wypełniony"
-      },
-      "customModelName": {
-        "desc": "Dodaj własny model, oddzielaj modele przecinkiem (,)",
-        "placeholder": "mistralai/mistral-7b-instruct:free,openchat/openchat-7b:free",
-        "title": "Nazwa własnego modelu"
-      },
-      "title": "OpenRouter",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od OpenRouter AI",
-        "placeholder": "OpenRouter AI API Key",
-        "title": "Klucz API"
-      }
-    },
-    "perplexity": {
-      "title": "Perplexity",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od Perplexity AI",
-        "placeholder": "Perplexity AI API Key",
-        "title": "Klucz API"
-      }
-    },
-    "togetherai": {
-      "checker": {
-        "desc": "Test czy adres proxy jest poprawnie wypełniony"
-      },
-      "customModelName": {
-        "desc": "Dodaj własny model, oddzielaj modele przecinkiem (,)",
-        "placeholder": "togethercomputer/Llama-2-7B-32K-Instruct,teknium/OpenHermes-2-Mistral-7B",
-        "title": "Nazwa własnego modelu"
-      },
-      "title": "TogetherAI",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od TogetherAI AI",
-        "placeholder": "TogetherAI AI API Key",
-        "title": "Klucz API"
-      }
-    },
-    "waitingForMore": "Więcej modeli jest obecnie w <1>planach dołączenia</1>, prosimy o cierpliwość ✨",
-    "zeroone": {
-      "title": "01.AI Zero Jeden Wszystko",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od 01.AI Zero Jeden Wszystko",
-        "placeholder": "01.AI Zero Jeden Wszystko API Key",
-        "title": "Klucz API"
-      }
-    },
-    "zhipu": {
-      "title": "Zhipu",
-      "token": {
-        "desc": "Wprowadź klucz API uzyskany od Zhipu",
-        "placeholder": "Zhipu API Key",
-        "title": "Klucz API"
-      }
-    }
-  },
-  "ollama": {
-    "download": {
-      "desc": "Ollama pobiera ten model. Prosimy nie zamykać tej strony. Gdy pobieranie zostanie wznowione, będzie kontynuowane od miejsca przerwania.",
-      "remainingTime": "Czas pozostały",
-      "speed": "Prędkość pobierania",
-      "title": "Pobieranie modelu {{model}}"
-    }
+    "waitingForMore": "Więcej modeli jest obecnie w <1>planach dołączenia</1>, prosimy o cierpliwość"
   },
   "plugin": {
     "addTooltip": "Dodaj niestandardowy dodatek",
@@ -271,6 +150,7 @@
       "title": "Kolor tła"
     },
     "description": {
+      "desc": "Krótki opis twojego asystenta, nie jako ustawienie postaci",
       "placeholder": "Proszę wprowadzić opis asystenta",
       "title": "Opis asystenta"
     },
@@ -282,7 +162,9 @@
       "placeholder": "Proszę wprowadzić słowo kluczowe dla roli Prompt",
       "title": "Ustawienia roli"
     },
+    "submit": "Zaktualizuj informacje o asystencie",
     "tag": {
+      "desc": "Tagi asystenta będą wyświetlane na rynku asystentów",
       "placeholder": "Proszę wprowadzić tag",
       "title": "Tag"
     },
@@ -308,12 +190,13 @@
       "desc": "Automatyczne tworzenie tematu podczas rozmowy, działa tylko w przypadku tymczasowych tematów",
       "title": "Automatyczne tworzenie tematu"
     },
-    "enableCompressThreshold": {
-      "title": "Włącz próg kompresji historii"
+    "enableCompressHistory": {
+      "title": "Włącz automatyczne podsumowywanie historii wiadomości"
     },
     "enableHistoryCount": {
       "alias": "Bez limitu",
       "limited": "Zawiera tylko {{number}} wiadomości",
+      "setlimited": "Ustaw limit wiadomości historycznych",
       "title": "Ograniczenie liczby wiadomości w historii",
       "unlimited": "Bez limitu wiadomości w historii"
     },
@@ -326,44 +209,70 @@
       "placeholder": "Szablon wejściowy {{text}} zostanie zastąpiony rzeczywistą wiadomością",
       "title": "Szablon wejściowy"
     },
+    "submit": "Zaktualizuj preferencje czatu",
     "title": "Ustawienia czatu"
   },
   "settingModel": {
     "enableMaxTokens": {
       "title": "Włącz limit jednorazowej odpowiedzi"
     },
+    "enableReasoningEffort": {
+      "title": "Włącz dostosowanie intensywności rozumowania"
+    },
     "frequencyPenalty": {
-      "desc": "Im większa wartość, tym większe prawdopodobieństwo zmniejszenia powtarzających się słów",
-      "title": "Kara za częstość"
+      "desc": "Im większa wartość, tym bardziej zróżnicowane i bogate słownictwo; im mniejsza wartość, tym prostsze i bardziej bezpośrednie słownictwo",
+      "title": "Różnorodność słownictwa"
     },
     "maxTokens": {
       "desc": "Maksymalna liczba tokenów używanych w pojedynczej interakcji",
       "title": "Limit jednorazowej odpowiedzi"
     },
     "model": {
-      "desc": "Model ChatGPT",
-      "list": {
-        "gpt-3.5-turbo": "GPT 3.5",
-        "gpt-3.5-turbo-16k": "GPT 3.5 (16K)",
-        "gpt-4": "GPT 4",
-        "gpt-4-32k": "GPT 4 (32K)"
-      },
+      "desc": "{{provider}} model",
       "title": "Model"
     },
-    "presencePenalty": {
-      "desc": "Im większa wartość, tym większe prawdopodobieństwo rozszerzenia się na nowe tematy",
-      "title": "Świeżość tematu"
+    "params": {
+      "title": "Zaawansowane parametry"
     },
+    "presencePenalty": {
+      "desc": "Im większa wartość, tym większa tendencja do różnorodnych wyrażeń, unikanie powtórzeń; im mniejsza wartość, tym większa tendencja do używania powtarzających się koncepcji lub narracji, co prowadzi do większej spójności",
+      "title": "Różnorodność wyrażeń"
+    },
+    "reasoningEffort": {
+      "desc": "Im wyższa wartość, tym silniejsza zdolność rozumowania, ale może to zwiększyć czas odpowiedzi i zużycie tokenów",
+      "options": {
+        "high": "Wysoki",
+        "low": "Niski",
+        "medium": "Średni"
+      },
+      "title": "Intensywność rozumowania"
+    },
+    "submit": "Zaktualizuj ustawienia modelu",
     "temperature": {
-      "desc": "Im większa wartość, tym odpowiedzi są bardziej losowe",
-      "title": "Losowość",
-      "titleWithValue": "Losowość {{value}}"
+      "desc": "Im większa wartość, tym bardziej kreatywne i wyobrażeniowe będą odpowiedzi; im mniejsza wartość, tym bardziej rygorystyczne odpowiedzi",
+      "title": "Aktywność kreatywna",
+      "warning": "Zbyt wysoka wartość aktywności kreatywnej może prowadzić do nieczytelnych wyników"
     },
     "title": "Ustawienia modelu",
     "topP": {
-      "desc": "Podobne do losowości, ale nie należy zmieniać razem z losowością",
-      "title": "Najlepsze P"
+      "desc": "Ile możliwości należy rozważyć, im większa wartość, tym więcej możliwych odpowiedzi; im mniejsza wartość, tym większa tendencja do wyboru najbardziej prawdopodobnej odpowiedzi. Nie zaleca się jednoczesnej zmiany z aktywnością kreatywną",
+      "title": "Otwartość myślenia"
     }
+  },
+  "settingOpening": {
+    "openingMessage": {
+      "desc": "Wiadomość powitalna wyświetlana przy otwarciu rozmowy, służąca do przedstawienia funkcji asystenta",
+      "placeholder": "Cześć, jestem dostosowanym asystentem, możesz od razu rozpocząć rozmowę lub przejść do ustawień asystenta, aby uzupełnić moje informacje.",
+      "title": "Wiadomość powitalna"
+    },
+    "openingQuestions": {
+      "desc": "Pytania wprowadzające wyświetlane na początku rozmowy",
+      "empty": "Brak pytań",
+      "placeholder": "Wprowadź pytanie",
+      "repeat": "Pytanie już istnieje",
+      "title": "Pytania powitalne"
+    },
+    "title": "Ustawienia otwarcia"
   },
   "settingPlugin": {
     "title": "Lista wtyczek"
@@ -395,6 +304,7 @@
   "settingTTS": {
     "openai": {
       "sttModel": "Model rozpoznawania mowy OpenAI",
+      "title": "OpenAI",
       "ttsModel": "Model syntezy mowy OpenAI"
     },
     "showAllLocaleVoice": {
@@ -414,6 +324,7 @@
       "desc": "Dla przeglądarki używana jest wbudowana usługa rozpoznawania mowy",
       "title": "Usługa rozpoznawania mowy"
     },
+    "submit": "Zaktualizuj usługę głosową",
     "title": "Usługi mowy",
     "tts": "Ustawienia syntezy mowy",
     "ttsService": {
@@ -457,6 +368,33 @@
     },
     "title": "Ustawienia motywu"
   },
+  "storage": {
+    "actions": {
+      "export": {
+        "button": "Eksportuj",
+        "exportType": {
+          "agent": "Eksportuj ustawienia agenta",
+          "agentWithMessage": "Eksportuj ustawienia agenta i wiadomości",
+          "all": "Eksportuj globalne ustawienia i wszystkie dane agenta",
+          "allAgent": "Eksportuj wszystkie ustawienia agenta",
+          "allAgentWithMessage": "Eksportuj wszystkie agentów i wiadomości",
+          "globalSetting": "Eksportuj globalne ustawienia"
+        },
+        "title": "Eksportuj dane"
+      },
+      "import": {
+        "button": "Importuj",
+        "title": "Importuj dane"
+      },
+      "title": "Zaawansowane operacje"
+    },
+    "desc": "Aktualne zużycie pamięci w przeglądarce",
+    "embeddings": {
+      "used": "Przechowywanie wektorów"
+    },
+    "title": "Przechowywanie danych",
+    "used": "Zużycie pamięci"
+  },
   "submitAgentModal": {
     "button": "Prześlij asystenta",
     "identifier": "Identyfikator asystenta",
@@ -464,47 +402,102 @@
     "placeholder": "Wprowadź identyfikator asystenta, musi być unikalny, na przykład web-development",
     "tooltips": "Udostępnij na rynku asystentów"
   },
+  "submitFooter": {
+    "reset": "Resetuj",
+    "submit": "Zapisz",
+    "unSaved": "Nie zapisane zmiany",
+    "unSavedWarning": "Obecnie są niezapisane zmiany"
+  },
   "sync": {
     "device": {
       "deviceName": {
-        "hint": "添加名称以便于识别",
-        "placeholder": "请输入设备名称",
-        "title": "设备名称"
+        "hint": "Dodaj nazwę, aby ułatwić identyfikację",
+        "placeholder": "Wprowadź nazwę urządzenia",
+        "title": "Nazwa urządzenia"
       },
-      "title": "设备信息",
-      "unknownBrowser": "未知浏览器",
-      "unknownOS": "未知系统"
+      "title": "Informacje o urządzeniu",
+      "unknownBrowser": "Nieznana przeglądarka",
+      "unknownOS": "Nieznany system"
     },
     "warning": {
-      "message": "本功能目前仍为实验性功能，可能存在预期外或不稳定的情况，如遇到问题请及时提交反馈。"
+      "tip": "After a long period of community testing, WebRTC synchronization may not be able to reliably meet general data synchronization needs. Please <1>deploy a signaling server</1> before use."
     },
     "webrtc": {
       "channelName": {
-        "desc": "WebRTC 将使用此名创建同步频道，确保频道名称唯一",
-        "placeholder": "请输入同步频道名称",
-        "shuffle": "随机生成",
-        "title": "同步频道名称"
+        "desc": "WebRTC użyje tej nazwy do utworzenia kanału synchronizacji, upewnij się, że nazwa kanału jest unikalna",
+        "placeholder": "Wprowadź nazwę kanału synchronizacji",
+        "shuffle": "Wygeneruj losowo",
+        "title": "Nazwa kanału synchronizacji"
       },
       "channelPassword": {
-        "desc": "添加密码确保频道私密性，只有密码正确时，设备才可加入频道",
-        "placeholder": "请输入同步频道密码",
-        "title": "同步频道密码"
+        "desc": "Dodaj hasło, aby zapewnić prywatność kanału. Tylko urządzenia z poprawnym hasłem mogą dołączyć do kanału",
+        "placeholder": "Wprowadź hasło kanału synchronizacji",
+        "title": "Hasło kanału synchronizacji"
       },
-      "desc": "实时、点对点的数据通信，需设备同时在线才可同步",
+      "desc": "Bezpośrednia, punkt-do-punktu komunikacja danych w czasie rzeczywistym, wymaga jednoczesnej obecności urządzeń online do synchronizacji",
       "enabled": {
-        "invalid": "请填写同步频道名称后再开启",
-        "title": "开启同步"
+        "invalid": "Please fill in the signaling server and synchronization channel name before enabling.",
+        "title": "Włącz synchronizację"
       },
-      "title": "WebRTC 同步"
+      "signaling": {
+        "desc": "WebRTC will use this address for synchronization",
+        "placeholder": "Enter signaling server address",
+        "title": "Signaling Server"
+      },
+      "title": "Synchronizacja WebRTC"
+    }
+  },
+  "systemAgent": {
+    "agentMeta": {
+      "label": "Model generowania metadanych asystenta",
+      "modelDesc": "Określa model używany do generowania nazwy, opisu, awatara i etykiety asystenta",
+      "title": "Automatyczne generowanie informacji o asystencie"
+    },
+    "customPrompt": {
+      "addPrompt": "Dodaj niestandardowy podpowiedź",
+      "desc": "Po wypełnieniu, asystent systemowy użyje niestandardowej podpowiedzi podczas generowania treści",
+      "placeholder": "Wprowadź niestandardowe słowo podpowiedzi",
+      "title": "Niestandardowe słowo podpowiedzi"
+    },
+    "helpInfo": "Podczas tworzenia nowego asystenta, domyślne ustawienia asystenta będą używane jako wartości wstępne.",
+    "historyCompress": {
+      "label": "Model historii rozmów",
+      "modelDesc": "Model używany do kompresji historii rozmów",
+      "title": "Automatyczne podsumowanie historii rozmów"
+    },
+    "queryRewrite": {
+      "label": "Model przekształcania zapytań",
+      "modelDesc": "Model używany do optymalizacji zapytań użytkowników",
+      "title": "Przekształcenie zapytań w bazie wiedzy"
+    },
+    "thread": {
+      "label": "Model do nazywania podtematów",
+      "modelDesc": "Model używany do automatycznego zmieniania nazw podtematów",
+      "title": "Automatyczne nazywanie podtematów"
+    },
+    "title": "Asystent Systemowy",
+    "topic": {
+      "label": "Model nazewnictwa tematów",
+      "modelDesc": "Określa model używany do automatycznego zmieniania nazw tematów",
+      "title": "Automatyczne nadawanie nazw tematom"
+    },
+    "translation": {
+      "label": "Model Tłumaczenia",
+      "modelDesc": "Określ model używany do tłumaczenia",
+      "title": "Ustawienia Asystenta Tłumaczenia"
     }
   },
   "tab": {
     "about": "O nas",
     "agent": "Domyślny asystent",
     "common": "Ustawienia ogólne",
-    "experiment": "实验",
+    "experiment": "Eksperyment",
+    "hotkey": "Skróty klawiszowe",
     "llm": "Model językowy",
-    "sync": "云端同步",
+    "provider": "Dostawca usług AI",
+    "storage": "Przechowywanie danych",
+    "sync": "Synchronizacja w chmurze",
+    "system-agent": "System Agent",
     "tts": "Usługa głosowa"
   },
   "tools": {

@@ -1,103 +1,86 @@
 import { JWTPayload, LOBE_CHAT_AUTH_HEADER } from '@/const/auth';
+import { isDeprecatedEdition } from '@/const/version';
 import { ModelProvider } from '@/libs/agent-runtime';
-import { useGlobalStore } from '@/store/global';
-import { modelProviderSelectors, settingsSelectors } from '@/store/global/selectors';
+import { aiProviderSelectors, useAiInfraStore } from '@/store/aiInfra';
+import { useUserStore } from '@/store/user';
+import { keyVaultsConfigSelectors, userProfileSelectors } from '@/store/user/selectors';
+import {
+  AWSBedrockKeyVault,
+  AzureOpenAIKeyVault,
+  CloudflareKeyVault,
+  OpenAICompatibleKeyVault,
+} from '@/types/user/settings';
 import { createJWT } from '@/utils/jwt';
 
-export const getProviderAuthPayload = (provider: string) => {
+export const getProviderAuthPayload = (
+  provider: string,
+  keyVaults: OpenAICompatibleKeyVault &
+    AzureOpenAIKeyVault &
+    AWSBedrockKeyVault &
+    CloudflareKeyVault,
+) => {
   switch (provider) {
-    case ModelProvider.ZhiPu: {
-      return { apiKey: modelProviderSelectors.zhipuAPIKey(useGlobalStore.getState()) };
-    }
-
-    case ModelProvider.Moonshot: {
-      return { apiKey: modelProviderSelectors.moonshotAPIKey(useGlobalStore.getState()) };
-    }
-
-    case ModelProvider.Google: {
-      return { apiKey: modelProviderSelectors.googleAPIKey(useGlobalStore.getState()) };
-    }
-
     case ModelProvider.Bedrock: {
-      const { accessKeyId, region, secretAccessKey } = modelProviderSelectors.bedrockConfig(
-        useGlobalStore.getState(),
-      );
+      const { accessKeyId, region, secretAccessKey, sessionToken } = keyVaults;
+
       const awsSecretAccessKey = secretAccessKey;
       const awsAccessKeyId = accessKeyId;
 
       const apiKey = (awsSecretAccessKey || '') + (awsAccessKeyId || '');
 
-      return { apiKey, awsAccessKeyId, awsRegion: region, awsSecretAccessKey };
+      return {
+        accessKeyId,
+        accessKeySecret: awsSecretAccessKey,
+        apiKey,
+        /** @deprecated */
+        awsAccessKeyId,
+        /** @deprecated */
+        awsRegion: region,
+        /** @deprecated */
+        awsSecretAccessKey,
+        /** @deprecated */
+        awsSessionToken: sessionToken,
+        region,
+        sessionToken,
+      };
     }
 
     case ModelProvider.Azure: {
-      const azure = modelProviderSelectors.azureConfig(useGlobalStore.getState());
-
       return {
-        apiKey: azure.apiKey,
-        azureApiVersion: azure.apiVersion,
-        endpoint: azure.endpoint,
+        apiKey: keyVaults.apiKey,
+
+        apiVersion: keyVaults.apiVersion,
+        /** @deprecated */
+        azureApiVersion: keyVaults.apiVersion,
+        baseURL: keyVaults.baseURL || keyVaults.endpoint,
       };
     }
 
     case ModelProvider.Ollama: {
-      const endpoint = modelProviderSelectors.ollamaProxyUrl(useGlobalStore.getState());
+      return { baseURL: keyVaults?.baseURL };
+    }
 
+    case ModelProvider.Cloudflare: {
       return {
-        endpoint,
+        apiKey: keyVaults?.apiKey,
+
+        baseURLOrAccountID: keyVaults?.baseURLOrAccountID,
+        /** @deprecated */
+        cloudflareBaseURLOrAccountID: keyVaults?.baseURLOrAccountID,
       };
     }
 
-    case ModelProvider.Perplexity: {
-      return { apiKey: modelProviderSelectors.perplexityAPIKey(useGlobalStore.getState()) };
-    }
-
-    case ModelProvider.Anthropic: {
-      const apiKey = modelProviderSelectors.anthropicAPIKey(useGlobalStore.getState());
-      const endpoint = modelProviderSelectors.anthropicProxyUrl(useGlobalStore.getState());
-      return { apiKey, endpoint };
-    }
-
-    case ModelProvider.Mistral: {
-      return { apiKey: modelProviderSelectors.mistralAPIKey(useGlobalStore.getState()) };
-    }
-
-    case ModelProvider.Groq: {
-      return { apiKey: modelProviderSelectors.groqAPIKey(useGlobalStore.getState()) };
-    }
-
-    case ModelProvider.OpenRouter: {
-      return { apiKey: modelProviderSelectors.openrouterAPIKey(useGlobalStore.getState()) };
-    }
-
-    case ModelProvider.TogetherAI: {
-      return { apiKey: modelProviderSelectors.togetheraiAPIKey(useGlobalStore.getState()) };
-    }
-
-    case ModelProvider.ZeroOne: {
-      return { apiKey: modelProviderSelectors.zerooneAPIKey(useGlobalStore.getState()) };
-    }
-
-    default:
-    case ModelProvider.OpenAI: {
-      const openai = modelProviderSelectors.openAIConfig(useGlobalStore.getState());
-      const apiKey = openai.OPENAI_API_KEY || '';
-      const endpoint = openai.endpoint || '';
-
-      return {
-        apiKey,
-        azureApiVersion: openai.azureApiVersion,
-        endpoint,
-        useAzure: openai.useAzure,
-      };
+    default: {
+      return { apiKey: keyVaults?.apiKey, baseURL: keyVaults?.baseURL };
     }
   }
 };
 
 const createAuthTokenWithPayload = async (payload = {}) => {
-  const accessCode = settingsSelectors.password(useGlobalStore.getState());
+  const accessCode = keyVaultsConfigSelectors.password(useUserStore.getState());
+  const userId = userProfileSelectors.userId(useUserStore.getState());
 
-  return await createJWT<JWTPayload>({ accessCode, ...payload });
+  return createJWT<JWTPayload>({ accessCode, userId, ...payload });
 };
 
 interface AuthParams {
@@ -107,12 +90,27 @@ interface AuthParams {
   provider?: string;
 }
 
+export const createPayloadWithKeyVaults = (provider: string) => {
+  let keyVaults = {};
+
+  // TODO: remove this condition in V2.0
+  if (isDeprecatedEdition) {
+    keyVaults = keyVaultsConfigSelectors.getVaultByProvider(provider as any)(
+      useUserStore.getState(),
+    );
+  } else {
+    keyVaults = aiProviderSelectors.providerKeyVaults(provider)(useAiInfraStore.getState()) || {};
+  }
+
+  return getProviderAuthPayload(provider, keyVaults);
+};
+
 // eslint-disable-next-line no-undef
 export const createHeaderWithAuth = async (params?: AuthParams): Promise<HeadersInit> => {
   let payload = params?.payload || {};
 
   if (params?.provider) {
-    payload = { ...payload, ...getProviderAuthPayload(params?.provider) };
+    payload = { ...payload, ...createPayloadWithKeyVaults(params?.provider) };
   }
 
   const token = await createAuthTokenWithPayload(payload);

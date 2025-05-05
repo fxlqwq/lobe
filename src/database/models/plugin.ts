@@ -1,62 +1,76 @@
-import { LobeChatPluginManifest } from '@lobehub/chat-plugin-sdk';
+import { and, desc, eq } from 'drizzle-orm/expressions';
 
-import { BaseModel } from '@/database/core';
-import { LobeTool } from '@/types/tool';
-import { merge } from '@/utils/merge';
+import { LobeChatDatabase } from '@/database/type';
 
-import { DB_Plugin, DB_PluginSchema } from '../schemas/plugin';
+import { InstalledPluginItem, NewInstalledPlugin, userInstalledPlugins } from '../schemas';
 
-export interface InstallPluginParams {
-  identifier: string;
-  manifest?: LobeChatPluginManifest;
-  type: 'plugin' | 'customPlugin';
+export class PluginModel {
+  private userId: string;
+  private db: LobeChatDatabase;
+
+  constructor(db: LobeChatDatabase, userId: string) {
+    this.userId = userId;
+    this.db = db;
+  }
+
+  create = async (
+    params: Pick<NewInstalledPlugin, 'type' | 'identifier' | 'manifest' | 'customParams'>,
+  ) => {
+    const [result] = await this.db
+      .insert(userInstalledPlugins)
+      .values({ ...params, createdAt: new Date(), updatedAt: new Date(), userId: this.userId })
+      .onConflictDoUpdate({
+        set: { ...params, updatedAt: new Date() },
+        target: [userInstalledPlugins.identifier, userInstalledPlugins.userId],
+      })
+      .returning();
+
+    return result;
+  };
+
+  delete = async (id: string) => {
+    return this.db
+      .delete(userInstalledPlugins)
+      .where(
+        and(eq(userInstalledPlugins.identifier, id), eq(userInstalledPlugins.userId, this.userId)),
+      );
+  };
+
+  deleteAll = async () => {
+    return this.db.delete(userInstalledPlugins).where(eq(userInstalledPlugins.userId, this.userId));
+  };
+
+  query = async () => {
+    return this.db
+      .select({
+        createdAt: userInstalledPlugins.createdAt,
+        customParams: userInstalledPlugins.customParams,
+        identifier: userInstalledPlugins.identifier,
+        manifest: userInstalledPlugins.manifest,
+        settings: userInstalledPlugins.settings,
+        type: userInstalledPlugins.type,
+        updatedAt: userInstalledPlugins.updatedAt,
+      })
+      .from(userInstalledPlugins)
+      .where(eq(userInstalledPlugins.userId, this.userId))
+      .orderBy(desc(userInstalledPlugins.createdAt));
+  };
+
+  findById = async (id: string) => {
+    return this.db.query.userInstalledPlugins.findFirst({
+      where: and(
+        eq(userInstalledPlugins.identifier, id),
+        eq(userInstalledPlugins.userId, this.userId),
+      ),
+    });
+  };
+
+  update = async (id: string, value: Partial<InstalledPluginItem>) => {
+    return this.db
+      .update(userInstalledPlugins)
+      .set({ ...value, updatedAt: new Date() })
+      .where(
+        and(eq(userInstalledPlugins.identifier, id), eq(userInstalledPlugins.userId, this.userId)),
+      );
+  };
 }
-
-class _PluginModel extends BaseModel {
-  constructor() {
-    super('plugins', DB_PluginSchema);
-  }
-  // **************** Query *************** //
-
-  getList = async (): Promise<DB_Plugin[]> => {
-    return this.table.toArray();
-  };
-  // **************** Create *************** //
-
-  create = async (plugin: InstallPluginParams) => {
-    const old = await this.table.get(plugin.identifier);
-    const dbPlugin = this.mapToDBPlugin(plugin);
-
-    return this._putWithSync(merge(old, dbPlugin), plugin.identifier);
-  };
-
-  batchCreate = async (plugins: LobeTool[]) => {
-    const dbPlugins = plugins.map((item) => this.mapToDBPlugin(item));
-
-    return this._batchAdd(dbPlugins);
-  };
-  // **************** Delete *************** //
-
-  delete(id: string) {
-    return this._deleteWithSync(id);
-  }
-  clear() {
-    return this._clearWithSync();
-  }
-
-  // **************** Update *************** //
-
-  update: (id: string, value: Partial<DB_Plugin>) => Promise<number> = async (id, value) => {
-    const { success } = await this._updateWithSync(id, value);
-
-    return success;
-  };
-
-  // **************** Helper *************** //
-
-  mapToDBPlugin(plugin: LobeTool) {
-    return { ...plugin, id: plugin.identifier } as DB_Plugin;
-  }
-}
-
-export const PluginModel = new _PluginModel();

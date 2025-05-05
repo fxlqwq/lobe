@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": ["dom", "dom.iterable", "esnext", "webworker"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -16,7 +16,7 @@
     "jsx": "preserve",
     "incremental": true,
     "baseUrl": ".",
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals", "@serwist/next/typings"],
     "paths": {
       "@/*": ["./src/*"],
       "~test-utils": ["./tests/utils.tsx"]
@@ -27,20 +27,15 @@
       }
     ]
   },
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules", "public/sw.js", "apps/desktop"],
   "include": [
+    "**/*.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
     "next-env.d.ts",
-    "vitest.config.ts",
     "src",
     "tests",
-    "**/*.ts",
-    "**/*.d.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "ts-node": {
-    "compilerOptions": {
-      "module": "commonjs"
-    }
-  }
+    "vitest.config.ts"
+  ]
 }

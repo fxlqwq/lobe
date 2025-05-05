@@ -1,4 +1,4 @@
-import { LobeDBSchemaMap } from '@/database/core/db';
+import { LobeDBSchemaMap } from '@/database/_deprecated/core/db';
 
 export type OnSyncEvent = (tableKey: keyof LobeDBSchemaMap) => void;
 export type OnSyncStatusChange = (status: PeerSyncStatus) => void;
@@ -23,7 +23,7 @@ export interface StartDataSyncParams {
   onAwarenessChange: OnAwarenessChange;
   onSyncEvent: OnSyncEvent;
   onSyncStatusChange: OnSyncStatusChange;
-  signaling?: string;
+  signaling: string;
   user: SyncUserInfo;
 }
 

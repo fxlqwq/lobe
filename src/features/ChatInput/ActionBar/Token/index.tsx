@@ -1,18 +1,34 @@
 import dynamic from 'next/dynamic';
-import { memo } from 'react';
+import { PropsWithChildren, memo } from 'react';
 
-import { useGlobalStore } from '@/store/global';
-import { modelProviderSelectors } from '@/store/global/selectors';
-import { useSessionStore } from '@/store/session';
-import { agentSelectors } from '@/store/session/selectors';
+import { useModelHasContextWindowToken } from '@/hooks/useModelHasContextWindowToken';
+import { useChatStore } from '@/store/chat';
+import { chatSelectors, threadSelectors } from '@/store/chat/selectors';
 
 const LargeTokenContent = dynamic(() => import('./TokenTag'), { ssr: false });
 
-const Token = memo(() => {
-  const model = useSessionStore(agentSelectors.currentAgentModel);
-  const showTag = useGlobalStore(modelProviderSelectors.modelHasMaxToken(model));
+const Token = memo<PropsWithChildren>(({ children }) => {
+  const showTag = useModelHasContextWindowToken();
 
-  return showTag && <LargeTokenContent />;
+  return showTag && children;
 });
 
-export default Token;
+export const MainToken = memo(() => {
+  const total = useChatStore(chatSelectors.mainAIChatsMessageString);
+
+  return (
+    <Token>
+      <LargeTokenContent total={total} />
+    </Token>
+  );
+});
+
+export const PortalToken = memo(() => {
+  const total = useChatStore(threadSelectors.portalDisplayChatsString);
+
+  return (
+    <Token>
+      <LargeTokenContent total={total} />
+    </Token>
+  );
+});

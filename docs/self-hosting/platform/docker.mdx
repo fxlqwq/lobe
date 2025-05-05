@@ -10,6 +10,7 @@ tags:
   - Proxy Configuration
   - Automatic Update Script
 ---
+
 # Docker Deployment Guide
 
 <div style={{display:"flex", gap: 4}}>
@@ -32,17 +33,14 @@ We provide a [Docker image][docker-release-link] for you to deploy the LobeChat 
       ```fish
       $ apt install docker.io
       ```
-   
-</Tab>
+    </Tab>
 
     <Tab>
       ```fish
       $ yum install docker
       ```
-   
-</Tab>
- 
-</Tabs>
+    </Tab>
+  </Tabs>
 
   ### Docker Command Deployment
 
@@ -62,27 +60,24 @@ We provide a [Docker image][docker-release-link] for you to deploy the LobeChat 
 
   - Replace `sk-xxxx` in the above command with your OpenAI API Key.
 
-  - For the complete list of environment variables supported by LobeChat, please refer to the [Environment Variables](/zh/self-hosting/environment-ariable) section.
+  - For the complete list of environment variables supported by LobeChat, please refer to the [Environment Variables](/docs/self-hosting/environment-variables) section.
 
   <Callout type="tip">
     Since the official Docker image build takes about half an hour, if you see the "update available"
     prompt after deployment, you can wait for the image to finish building before deploying again.
- 
-</Callout>
+  </Callout>
 
   <Callout type="warning">
     The official Docker image does not have a password set. It is strongly recommended to add a
     password to enhance security, otherwise you may encounter situations like [My API Key was
     stolen!!!](https://github.com/lobehub/lobe-chat/issues/1123).
- 
-</Callout>
+  </Callout>
 
   <Callout type="important">
     Note that when the **deployment architecture is inconsistent with the image**, you need to
     cross-compile **Sharp**, see [Sharp
     Cross-Compilation](https://sharp.pixelplumbing.com/install#cross-platform) for details.
- 
-</Callout>
+  </Callout>
 
   #### Using a Proxy Address
 
@@ -107,7 +102,7 @@ We provide a [Docker image][docker-release-link] for you to deploy the LobeChat 
   OPENAI_API_KEY=sk-xxxx
   OPENAI_PROXY_URL=https://api-proxy.com/v1
   ACCESS_CODE=arthals2333
-  CUSTOM_MODELS=-gpt-4,-gpt-4-32k,-gpt-3.5-turbo-16k,gpt-3.5-turbo-1106=gpt-3.5-turbo-16k,gpt-4-0125-preview=gpt-4-turbo,gpt-4-vision-preview=gpt-4-vision
+  OPENAI_MODEL_LIST=-gpt-4,-gpt-4-32k,-gpt-3.5-turbo-16k,gpt-3.5-turbo-1106=gpt-3.5-turbo-16k,gpt-4-0125-preview=gpt-4-turbo,gpt-4-vision-preview=gpt-4-vision
   ```
 
   Then, you can use the following script to automate the update:
@@ -148,7 +143,7 @@ We provide a [Docker image][docker-release-link] for you to deploy the LobeChat 
   echo "Version: $(docker inspect lobehub/lobe-chat:latest | grep 'org.opencontainers.image.version' | awk -F'"' '{print $4}')"
 
   # Clean up unused images
-  docker images | grep 'lobehub/lobe-chat' | grep -v 'latest' | awk '{print $3}' | xargs -r docker rmi > /dev/null 2>&1
+  docker images | grep 'lobehub/lobe-chat' | grep -v 'lobehub/lobe-chat-database' | grep -v 'latest' | awk '{print $3}' | xargs -r docker rmi > /dev/null 2>&1
   echo "Removed old images."
   ```
 
@@ -164,6 +159,6 @@ We provide a [Docker image][docker-release-link] for you to deploy the LobeChat 
 [docker-pulls-link]: https://hub.docker.com/r/lobehub/lobe-chat
 [docker-pulls-shield]: https://img.shields.io/docker/pulls/lobehub/lobe-chat?color=45cc11&labelColor=black&style=flat-square
 [docker-release-link]: https://hub.docker.com/r/lobehub/lobe-chat
-[docker-release-shield]: https://img.shields.io/docker/v/lobehub/lobe-chat?color=369eff&label=docker&labelColor=black&logo=docker&logoColor=white&style=flat-square
+[docker-release-shield]: https://img.shields.io/docker/v/lobehub/lobe-chat?color=369eff&label=docker&labelColor=black&logo=docker&logoColor=white&style=flat-square&sort=semver
 [docker-size-link]: https://hub.docker.com/r/lobehub/lobe-chat
-[docker-size-shield]: https://img.shields.io/docker/image-size/lobehub/lobe-chat?color=369eff&labelColor=black&style=flat-square
+[docker-size-shield]: https://img.shields.io/docker/image-size/lobehub/lobe-chat?color=369eff&labelColor=black&style=flat-square&sort=semver

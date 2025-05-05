@@ -1,27 +1,49 @@
 import dynamic from 'next/dynamic';
 
-import { getClientConfig } from '@/config/client';
-import { getServerConfig } from '@/config/server';
+import { analyticsEnv } from '@/config/analytics';
+import { isDesktop } from '@/const/version';
 
+import Desktop from './Desktop';
 import Google from './Google';
 import Vercel from './Vercel';
 
-const Plausible = dynamic(() => import('./Plausible'), { ssr: false });
-const Posthog = dynamic(() => import('./Posthog'), { ssr: false });
-const Umami = dynamic(() => import('./Umami'), { ssr: false });
-
-const { ANALYTICS_POSTHOG, ANALYTICS_PLAUSIBLE, ANALYTICS_UMAMI } = getClientConfig();
-
-const { ENABLE_VERCEL_ANALYTICS, ENABLE_GOOGLE_ANALYTICS } = getServerConfig();
+const Plausible = dynamic(() => import('./Plausible'));
+const Posthog = dynamic(() => import('./Posthog'));
+const Umami = dynamic(() => import('./Umami'));
+const Clarity = dynamic(() => import('./Clarity'));
+const ReactScan = dynamic(() => import('./ReactScan'));
 
 const Analytics = () => {
   return (
     <>
-      {ENABLE_VERCEL_ANALYTICS && <Vercel />}
-      {ENABLE_GOOGLE_ANALYTICS && <Google />}
-      {ANALYTICS_PLAUSIBLE && <Plausible />}
-      {ANALYTICS_POSTHOG && <Posthog />}
-      {ANALYTICS_UMAMI && <Umami />}
+      {analyticsEnv.ENABLE_VERCEL_ANALYTICS && <Vercel />}
+      {analyticsEnv.ENABLE_GOOGLE_ANALYTICS && <Google />}
+      {analyticsEnv.ENABLED_PLAUSIBLE_ANALYTICS && (
+        <Plausible
+          domain={analyticsEnv.PLAUSIBLE_DOMAIN}
+          scriptBaseUrl={analyticsEnv.PLAUSIBLE_SCRIPT_BASE_URL}
+        />
+      )}
+      {analyticsEnv.ENABLED_POSTHOG_ANALYTICS && (
+        <Posthog
+          debug={analyticsEnv.DEBUG_POSTHOG_ANALYTICS}
+          host={analyticsEnv.POSTHOG_HOST!}
+          token={analyticsEnv.POSTHOG_KEY}
+        />
+      )}
+      {analyticsEnv.ENABLED_UMAMI_ANALYTICS && (
+        <Umami
+          scriptUrl={analyticsEnv.UMAMI_SCRIPT_URL}
+          websiteId={analyticsEnv.UMAMI_WEBSITE_ID}
+        />
+      )}
+      {analyticsEnv.ENABLED_CLARITY_ANALYTICS && (
+        <Clarity projectId={analyticsEnv.CLARITY_PROJECT_ID} />
+      )}
+      {!!analyticsEnv.REACT_SCAN_MONITOR_API_KEY && (
+        <ReactScan apiKey={analyticsEnv.REACT_SCAN_MONITOR_API_KEY} />
+      )}
+      {isDesktop && <Desktop />}
     </>
   );
 };

@@ -1,86 +1,111 @@
-import { OpenAIStream, StreamingTextResponse } from 'ai';
-import OpenAI, { ClientOptions } from 'openai';
+import type { ChatModelCard } from '@/types/llm';
 
-import { LobeRuntimeAI } from '../BaseAI';
-import { AgentRuntimeErrorType } from '../error';
-import { ChatCompetitionOptions, ChatStreamPayload, ModelProvider } from '../types';
-import { AgentRuntimeError } from '../utils/createError';
-import { debugStream } from '../utils/debugStream';
-import { desensitizeUrl } from '../utils/desensitizeUrl';
-import { handleOpenAIError } from '../utils/handleOpenAIError';
+import { ModelProvider } from '../types';
+import { LobeOpenAICompatibleFactory } from '../utils/openaiCompatibleFactory';
+import { OpenRouterModelCard, OpenRouterModelExtraInfo, OpenRouterReasoning } from './type';
 
-const DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
+const formatPrice = (price: string) => {
+  if (price === '-1') return undefined;
+  return Number((Number(price) * 1e6).toPrecision(5));
+};
 
-export class LobeOpenRouterAI implements LobeRuntimeAI {
-  private client: OpenAI;
+export const LobeOpenRouterAI = LobeOpenAICompatibleFactory({
+  baseURL: 'https://openrouter.ai/api/v1',
+  chatCompletion: {
+    handlePayload: (payload) => {
+      const { thinking } = payload;
 
-  baseURL: string;
+      let reasoning: OpenRouterReasoning = {};
+      if (thinking?.type === 'enabled') {
+        reasoning = {
+          max_tokens: thinking.budget_tokens,
+        };
+      }
 
-  constructor({ apiKey, baseURL = DEFAULT_BASE_URL, ...res }: ClientOptions) {
-    if (!apiKey) throw AgentRuntimeError.createError(AgentRuntimeErrorType.InvalidOpenRouterAPIKey);
-    
-    this.client = new OpenAI({
-      apiKey,
-      baseURL,
-      defaultHeaders: {
-        "HTTP-Referer": "https://chat-preview.lobehub.com",
-        "X-Title": "Lobe Chat"
-      },
-      ...res
-    });
-    this.baseURL = this.client.baseURL;
-  }
+      return {
+        ...payload,
+        model: payload.enabledSearch ? `${payload.model}:online` : payload.model,
+        reasoning,
+        stream: payload.stream ?? true,
+      } as any;
+    },
+  },
+  constructorOptions: {
+    defaultHeaders: {
+      'HTTP-Referer': 'https://chat-preview.lobehub.com',
+      'X-Title': 'Lobe Chat',
+    },
+  },
+  debug: {
+    chatCompletion: () => process.env.DEBUG_OPENROUTER_CHAT_COMPLETION === '1',
+  },
+  models: async ({ client }) => {
+    const { LOBE_DEFAULT_MODEL_LIST } = await import('@/config/aiModels');
 
-  async chat(payload: ChatStreamPayload, options?: ChatCompetitionOptions) {
+    const reasoningKeywords = [
+      'deepseek/deepseek-r1',
+      'openai/o1',
+      'openai/o3',
+      'qwen/qvq',
+      'qwen/qwq',
+      'thinking',
+    ];
+
+    const modelsPage = (await client.models.list()) as any;
+    const modelList: OpenRouterModelCard[] = modelsPage.data;
+
+    const modelsExtraInfo: OpenRouterModelExtraInfo[] = [];
     try {
-      const response = await this.client.chat.completions.create(
-        payload as unknown as OpenAI.ChatCompletionCreateParamsStreaming
-      );
-      const [prod, debug] = response.tee();
-
-      if (process.env.DEBUG_OPENROUTER_CHAT_COMPLETION === '1') {
-        debugStream(debug.toReadableStream()).catch(console.error);
+      const response = await fetch('https://openrouter.ai/api/frontend/models');
+      if (response.ok) {
+        const data = await response.json();
+        modelsExtraInfo.push(...data['data']);
       }
-
-      return new StreamingTextResponse(OpenAIStream(prod, options?.callback), {
-        headers: options?.headers,
-      });
     } catch (error) {
-      let desensitizedEndpoint = this.baseURL;
-
-      if (this.baseURL !== DEFAULT_BASE_URL) {
-        desensitizedEndpoint = desensitizeUrl(this.baseURL);
-      }
-
-      if ('status' in (error as any)) {
-        switch ((error as Response).status) {
-          case 401: {
-            throw AgentRuntimeError.chat({
-              endpoint: desensitizedEndpoint,
-              error: error as any,
-              errorType: AgentRuntimeErrorType.InvalidOpenRouterAPIKey,
-              provider: ModelProvider.OpenRouter,
-            });
-          }
-
-          default: {
-            break;
-          }
-        }
-      }
-
-      const { errorResult, RuntimeError } = handleOpenAIError(error);
-
-      const errorType = RuntimeError || AgentRuntimeErrorType.OpenRouterBizError;
-
-      throw AgentRuntimeError.chat({
-        endpoint: desensitizedEndpoint,
-        error: errorResult,
-        errorType,
-        provider: ModelProvider.OpenRouter,
-      });
+      // 忽略 fetch 错误，使用空的 modelsExtraInfo 数组继续处理
+      console.error('Failed to fetch OpenRouter frontend models:', error);
     }
-  }
-}
 
-export default LobeOpenRouterAI;
+    return modelList
+      .map((model) => {
+        const knownModel = LOBE_DEFAULT_MODEL_LIST.find(
+          (m) => model.id.toLowerCase() === m.id.toLowerCase(),
+        );
+        const extraInfo = modelsExtraInfo.find(
+          (m) => m.slug.toLowerCase() === model.id.toLowerCase(),
+        );
+
+        return {
+          contextWindowTokens: model.context_length,
+          description: model.description,
+          displayName: model.name,
+          enabled: knownModel?.enabled || false,
+          functionCall:
+            model.description.includes('function calling') ||
+            model.description.includes('tools') ||
+            extraInfo?.endpoint?.supports_tool_parameters ||
+            knownModel?.abilities?.functionCall ||
+            false,
+          id: model.id,
+          maxTokens:
+            typeof model.top_provider.max_completion_tokens === 'number'
+              ? model.top_provider.max_completion_tokens
+              : undefined,
+          pricing: {
+            input: formatPrice(model.pricing.prompt),
+            output: formatPrice(model.pricing.completion),
+          },
+          reasoning:
+            reasoningKeywords.some((keyword) => model.id.toLowerCase().includes(keyword)) ||
+            extraInfo?.endpoint?.supports_reasoning ||
+            knownModel?.abilities?.reasoning ||
+            false,
+          releasedAt: new Date(model.created * 1000).toISOString().split('T')[0],
+          vision:
+            model.architecture.modality.includes('image') || knownModel?.abilities?.vision || false,
+        };
+      })
+      .filter(Boolean) as ChatModelCard[];
+  },
+  provider: ModelProvider.OpenRouter,
+});

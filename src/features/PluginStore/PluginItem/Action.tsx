@@ -1,12 +1,13 @@
-import { ActionIcon, Icon } from '@lobehub/ui';
-import { Button, Dropdown, Popconfirm } from 'antd';
-import { useResponsive } from 'antd-style';
+import { ActionIcon, Button, Dropdown, Icon } from '@lobehub/ui';
+import { App } from 'antd';
 import { InfoIcon, MoreVerticalIcon, Settings, Trash2 } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flexbox } from 'react-layout-kit';
 
 import PluginDetailModal from '@/features/PluginDetailModal';
+import { useAgentStore } from '@/store/agent';
+import { useServerConfigStore } from '@/store/serverConfig';
 import { pluginHelpers, useToolStore } from '@/store/tool';
 import { pluginSelectors, pluginStoreSelectors } from '@/store/tool/selectors';
 import { LobeToolType } from '@/types/tool/tool';
@@ -19,18 +20,20 @@ interface ActionsProps {
 }
 
 const Actions = memo<ActionsProps>(({ identifier, type }) => {
+  const mobile = useServerConfigStore((s) => s.isMobile);
   const [installed, installing, installPlugin, unInstallPlugin] = useToolStore((s) => [
     pluginSelectors.isPluginInstalled(identifier)(s),
     pluginStoreSelectors.isPluginInstallLoading(identifier)(s),
     s.installPlugin,
     s.uninstallPlugin,
   ]);
-  const { mobile } = useResponsive();
+
   const isCustomPlugin = type === 'customPlugin';
   const { t } = useTranslation('plugin');
   const [open, setOpen] = useState(false);
-  const plugin = useToolStore(pluginSelectors.getPluginManifestById(identifier));
-
+  const plugin = useToolStore(pluginSelectors.getToolManifestById(identifier));
+  const togglePlugin = useAgentStore((s) => s.togglePlugin);
+  const { modal } = App.useApp();
   const [tab, setTab] = useState('info');
   const hasSettings = pluginHelpers.isSettingSchemaNonEmpty(plugin?.settings);
 
@@ -66,21 +69,16 @@ const Actions = memo<ActionsProps>(({ identifier, type }) => {
                     danger: true,
                     icon: <Icon icon={Trash2} />,
                     key: 'uninstall',
-                    label: (
-                      <Popconfirm
-                        arrow={false}
-                        cancelText={t('cancel', { ns: 'common' })}
-                        okButtonProps={{ danger: true }}
-                        okText={t('ok', { ns: 'common' })}
-                        onConfirm={() => {
-                          unInstallPlugin(identifier);
-                        }}
-                        placement={'topRight'}
-                        title={t('store.actions.confirmUninstall')}
-                      >
-                        {t('store.actions.uninstall')}
-                      </Popconfirm>
-                    ),
+                    label: t('store.actions.uninstall'),
+                    onClick: () => {
+                      modal.confirm({
+                        centered: true,
+                        okButtonProps: { danger: true },
+                        onOk: async () => unInstallPlugin(identifier),
+                        title: t('store.actions.confirmUninstall'),
+                        type: 'error',
+                      });
+                    },
                   },
                 ],
               }}
@@ -93,8 +91,9 @@ const Actions = memo<ActionsProps>(({ identifier, type }) => {
         ) : (
           <Button
             loading={installing}
-            onClick={() => {
-              installPlugin(identifier);
+            onClick={async () => {
+              await installPlugin(identifier);
+              await togglePlugin(identifier);
             }}
             size={mobile ? 'small' : undefined}
             type={'primary'}

@@ -5,7 +5,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useGlobalStore } from '@/store/global';
-import { settingsSelectors } from '@/store/global/selectors';
+import { globalGeneralSelectors } from '@/store/global/selectors';
 import { useToolStore } from '@/store/tool';
 import { pluginSelectors } from '@/store/tool/selectors';
 
@@ -13,7 +13,7 @@ const EmojiPicker = dynamic(() => import('@lobehub/ui/es/EmojiPicker'), { ssr: f
 
 const LocalForm = memo<{ form: FormInstance; mode?: 'edit' | 'create' }>(({ form, mode }) => {
   const isEditMode = mode === 'edit';
-  const locale = useGlobalStore(settingsSelectors.currentLanguage);
+  const locale = useGlobalStore(globalGeneralSelectors.currentLanguage);
   const { t } = useTranslation('plugin');
 
   const pluginIds = useToolStore(pluginSelectors.storeAndInstallPluginsIdList);
@@ -114,6 +114,7 @@ const LocalForm = memo<{ form: FormInstance; mode?: 'edit' | 'create' }>(({ form
           title: t('dev.metaConfig'),
         },
       ]}
+      layout={'vertical'}
       validateMessages={{
         required: () => t('dev.meta.formFieldRequired'),
       }}

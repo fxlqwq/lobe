@@ -4,49 +4,36 @@ export const AgentRuntimeErrorType = {
   AgentRuntimeError: 'AgentRuntimeError', // Agent Runtime 模块运行时错误
   LocationNotSupportError: 'LocationNotSupportError',
 
-  OpenAIBizError: 'OpenAIBizError',
+  QuotaLimitReached: 'QuotaLimitReached',
+  InsufficientQuota: 'InsufficientQuota',
 
-  NoOpenAIAPIKey: 'NoOpenAIAPIKey',
+  ModelNotFound: 'ModelNotFound',
 
-  InvalidAzureAPIKey: 'InvalidAzureAPIKey',
-  AzureBizError: 'AzureBizError',
+  PermissionDenied: 'PermissionDenied',
+  ExceededContextWindow: 'ExceededContextWindow',
 
-  InvalidZhipuAPIKey: 'InvalidZhipuAPIKey',
-  ZhipuBizError: 'ZhipuBizError',
-
-  InvalidGoogleAPIKey: 'InvalidGoogleAPIKey',
-  GoogleBizError: 'GoogleBizError',
-
-  InvalidBedrockCredentials: 'InvalidBedrockCredentials',
-  BedrockBizError: 'BedrockBizError',
-
-  InvalidMistralAPIKey: 'InvalidMistralAPIKey',
-  MistralBizError: 'MistralBizError',
-
-  InvalidMoonshotAPIKey: 'InvalidMoonshotAPIKey',
-  MoonshotBizError: 'MoonshotBizError',
+  InvalidProviderAPIKey: 'InvalidProviderAPIKey',
+  ProviderBizError: 'ProviderBizError',
 
   InvalidOllamaArgs: 'InvalidOllamaArgs',
   OllamaBizError: 'OllamaBizError',
+  OllamaServiceUnavailable: 'OllamaServiceUnavailable',
 
-  InvalidPerplexityAPIKey: 'InvalidPerplexityAPIKey',
-  PerplexityBizError: 'PerplexityBizError',
+  InvalidBedrockCredentials: 'InvalidBedrockCredentials',
+  InvalidVertexCredentials: 'InvalidVertexCredentials',
+  StreamChunkError: 'StreamChunkError',
 
-  InvalidAnthropicAPIKey: 'InvalidAnthropicAPIKey',
-  AnthropicBizError: 'AnthropicBizError',
+  InvalidGithubToken: 'InvalidGithubToken',
 
-  InvalidGroqAPIKey: 'InvalidGroqAPIKey',
-  GroqBizError: 'GroqBizError',
+  ConnectionCheckFailed: 'ConnectionCheckFailed',
 
-  InvalidZeroOneAPIKey: 'InvalidZeroOneAPIKey',
-  ZeroOneBizError: 'ZeroOneBizError',
-
-  InvalidOpenRouterAPIKey: 'InvalidOpenRouterAPIKey',
-  OpenRouterBizError: 'OpenRouterBizError',
-
-  InvalidTogetherAIAPIKey: 'InvalidTogetherAIAPIKey',
-  TogetherAIBizError: 'TogetherAIBizError',
+  /**
+   * @deprecated
+   */
+  NoOpenAIAPIKey: 'NoOpenAIAPIKey',
 } as const;
+
+export const AGENT_RUNTIME_ERROR_SET = new Set<string>(Object.values(AgentRuntimeErrorType));
 
 export type ILobeAgentRuntimeErrorType =
   (typeof AgentRuntimeErrorType)[keyof typeof AgentRuntimeErrorType];

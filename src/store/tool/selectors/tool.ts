@@ -1,51 +1,29 @@
 import { LobeChatPluginManifest } from '@lobehub/chat-plugin-sdk';
-import { uniqBy } from 'lodash-es';
-import { Md5 } from 'ts-md5';
 
-import { PLUGIN_SCHEMA_API_MD5_PREFIX, PLUGIN_SCHEMA_SEPARATOR } from '@/const/plugin';
+import { pluginPrompts } from '@/prompts/plugin';
 import { MetaData } from '@/types/meta';
 import { ChatCompletionTool } from '@/types/openai/chat';
 import { LobeToolMeta } from '@/types/tool/tool';
+import { globalAgentContextManager } from '@/utils/client/GlobalAgentContextManager';
+import { hydrationPrompt } from '@/utils/promptTemplate';
+import { genToolCallingName } from '@/utils/toolCall';
+import { convertPluginManifestToToolsCalling } from '@/utils/toolManifest';
 
 import { pluginHelpers } from '../helpers';
 import { ToolStoreState } from '../initialState';
 import { builtinToolSelectors } from '../slices/builtin/selectors';
 import { pluginSelectors } from '../slices/plugin/selectors';
 
-const getAPIName = (identifier: string, name: string, type?: string) => {
-  const pluginType = type && type !== 'default' ? `${PLUGIN_SCHEMA_SEPARATOR + type}` : '';
-
-  // 将插件的 identifier 作为前缀，避免重复
-  let apiName = identifier + PLUGIN_SCHEMA_SEPARATOR + name + pluginType;
-
-  // OpenAI GPT function_call name can't be longer than 64 characters
-  // So we need to use md5 to shorten the name
-  // and then find the correct apiName in response by md5
-  if (apiName.length >= 64) {
-    const md5Content = PLUGIN_SCHEMA_API_MD5_PREFIX + Md5.hashStr(name).toString();
-
-    apiName = identifier + PLUGIN_SCHEMA_SEPARATOR + md5Content + pluginType;
-  }
-
-  return apiName;
-};
-
 const enabledSchema =
   (tools: string[] = []) =>
   (s: ToolStoreState): ChatCompletionTool[] => {
-    const list = pluginSelectors
+    const manifests = pluginSelectors
       .installedPluginManifestList(s)
       .concat(s.builtinTools.map((b) => b.manifest as LobeChatPluginManifest))
       // 如果存在 enabledPlugins，那么只启用 enabledPlugins 中的插件
-      .filter((m) => tools.includes(m?.identifier))
-      .flatMap((manifest) =>
-        manifest.api.map((m) => ({
-          ...m,
-          name: getAPIName(manifest.identifier, m.name, manifest.type),
-        })),
-      );
+      .filter((m) => tools.includes(m?.identifier));
 
-    return uniqBy(list, 'name').map((i) => ({ function: i, type: 'function' }));
+    return convertPluginManifestToToolsCalling(manifests);
   };
 
 const enabledSystemRoles =
@@ -55,46 +33,50 @@ const enabledSystemRoles =
       .installedPluginManifestList(s)
       .concat(s.builtinTools.map((b) => b.manifest as LobeChatPluginManifest))
       // 如果存在 enabledPlugins，那么只启用 enabledPlugins 中的插件
-      .filter((m) => tools.includes(m?.identifier))
+      .filter((m) => m && tools.includes(m.identifier))
       .map((manifest) => {
-        if (!manifest) return '';
-
         const meta = manifest.meta || {};
 
         const title = pluginHelpers.getPluginTitle(meta) || manifest.identifier;
-        const systemRole = manifest.systemRole || pluginHelpers.getPluginDesc(meta);
+        let systemRole = manifest.systemRole || pluginHelpers.getPluginDesc(meta);
 
-        const methods = manifest.api
-          .map((m) =>
-            [`#### ${getAPIName(manifest.identifier, m.name, manifest.type)}`, m.description].join(
-              '\n\n',
-            ),
-          )
-          .join('\n\n');
+        // Use the global context manager to fill the template
+        if (systemRole) {
+          const context = globalAgentContextManager.getContext();
 
-        return [`### ${title}`, systemRole, 'The APIs you can use:', methods].join('\n\n');
-      })
-      .filter(Boolean);
+          systemRole = hydrationPrompt(systemRole, context);
+        }
+
+        return {
+          apis: manifest.api.map((m) => ({
+            desc: m.description,
+            name: genToolCallingName(manifest.identifier, m.name, manifest.type),
+          })),
+          identifier: manifest.identifier,
+          name: title,
+          systemRole,
+        };
+      });
 
     if (toolsSystemRole.length > 0) {
-      return ['## Tools', 'You can use these tools below:', ...toolsSystemRole]
-        .filter(Boolean)
-        .join('\n\n');
+      return pluginPrompts({ tools: toolsSystemRole });
     }
 
     return '';
   };
 
-const metaList = (s: ToolStoreState): LobeToolMeta[] => {
-  const pluginList = pluginSelectors.installedPluginMetaList(s) as LobeToolMeta[];
+const metaList =
+  (showDalle?: boolean) =>
+  (s: ToolStoreState): LobeToolMeta[] => {
+    const pluginList = pluginSelectors.installedPluginMetaList(s) as LobeToolMeta[];
 
-  return builtinToolSelectors.metaList(s).concat(pluginList);
-};
+    return builtinToolSelectors.metaList(showDalle)(s).concat(pluginList);
+  };
 
 const getMetaById =
-  (id: string) =>
+  (id: string, showDalle: boolean = true) =>
   (s: ToolStoreState): MetaData | undefined =>
-    metaList(s).find((m) => m.identifier === id)?.meta;
+    metaList(showDalle)(s).find((m) => m.identifier === id)?.meta;
 
 const getManifestById =
   (id: string) =>
@@ -115,11 +97,24 @@ const getManifestLoadingStatus = (id: string) => (s: ToolStoreState) => {
   if (!!manifest) return 'success';
 };
 
+const isToolHasUI = (id: string) => (s: ToolStoreState) => {
+  const manifest = getManifestById(id)(s);
+  if (!manifest) return false;
+  const builtinTool = s.builtinTools.find((tool) => tool.identifier === id);
+
+  if (builtinTool && builtinTool.type === 'builtin') {
+    return true;
+  }
+
+  return !!manifest.ui;
+};
+
 export const toolSelectors = {
   enabledSchema,
   enabledSystemRoles,
   getManifestById,
   getManifestLoadingStatus,
   getMetaById,
+  isToolHasUI,
   metaList,
 };

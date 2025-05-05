@@ -1,15 +1,11 @@
 export const LOADING_FLAT = '...';
 
-//  start with this，it should be a function message
-export const FUNCTION_MESSAGE_FLAG = '{"tool_calls"';
+export const MESSAGE_CANCEL_FLAT = 'canceled';
 
-export const isFunctionMessageAtStart = (content: string) => {
-  return content.startsWith(FUNCTION_MESSAGE_FLAG);
-};
+export const MESSAGE_THREAD_DIVIDER_ID = '__THREAD_DIVIDER__';
 
-export const testFunctionMessageAtEnd = (content: string) => {
-  const regExp = /{"tool_calls":.*?]}$/;
-  const match = content?.trim().match(regExp);
+export const MESSAGE_WELCOME_GUIDE_ID = 'welcome';
 
-  return { content: match ? match[0] : '', valid: !!match };
-};
+export const THREAD_DRAFT_ID = '__THREAD_DRAFT_ID__';
+
+export const MESSAGE_FLAGGED_THINKING = 'FLAGGED_THINKING';

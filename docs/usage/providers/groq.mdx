@@ -1,29 +1,28 @@
 ---
-title: Using Groq in LobeChat
+title: Using Groq API Key in LobeChat
 description: >-
-  Integrate Groq's LPU Inference Engine with LobeChat to accelerate large
-  language models. Learn how to obtain GroqCloud API keys and configure Groq in
-  LobeChat for optimal performance.
+  Learn how to obtain GroqCloud API keys and configure Groq in LobeChat for
+  optimal performance.
 tags:
-  - Groq
-  - LobeChat
-  - AI solutions
   - LPU Inference Engine
   - GroqCloud
+  - LLAMA3
+  - Qwen2
   - API keys
-  - Language Model
+  - Web UI
 ---
-
-import { Callout, Steps } from 'nextra/components';
 
 # Using Groq in LobeChat
 
-<Image alt={'Using Groq in LobeChat'} cover src={'https://github.com/lobehub/lobe-chat/assets/34400653/d0d08d98-a8d2-4b97-97c0-24a4f01d7eac'} />
+<Image alt={'Using Groq in LobeChat'} cover src={'https://github.com/lobehub/lobe-chat/assets/17870709/1d840e27-fa74-4e71-b777-330bf41d6dff'} />
 
 Groq's [LPU Inference Engine](https://wow.groq.com/news_press/groq-lpu-inference-engine-leads-in-first-independent-llm-benchmark/) has excelled in the latest independent Large Language Model (LLM) benchmark, redefining the standard for AI solutions with its remarkable speed and efficiency. By integrating LobeChat with Groq Cloud, you can now easily leverage Groq's technology to accelerate the operation of large language models in LobeChat.
 
 <Callout type={'info'}>
-  Groq's LPU Inference Engine achieved a sustained speed of 300 tokens per second in internal benchmark tests, and according to benchmark tests by ArtificialAnalysis.ai, Groq outperformed other providers in terms of throughput (241 tokens per second) and total time to receive 100 output tokens (0.8 seconds).
+  Groq's LPU Inference Engine achieved a sustained speed of 300 tokens per second in internal
+  benchmark tests, and according to benchmark tests by ArtificialAnalysis.ai, Groq outperformed
+  other providers in terms of throughput (241 tokens per second) and total time to receive 100
+  output tokens (0.8 seconds).
 </Callout>
 
 This document will guide you on how to use Groq in LobeChat:
@@ -40,9 +39,9 @@ This document will guide you on how to use Groq in LobeChat:
   <Image alt={'Save GroqCloud API Key'} height={274} inStep src={'https://github.com/lobehub/lobe-chat/assets/34400653/eb57ca57-4f45-4409-91ce-9fa9c7c626d6'} />
 
   <Callout type={'warning'}>
-    Safely store the key from the pop-up as it will only appear once. If you accidentally lose it, you will need to create a new key.
- 
-</Callout>
+    Safely store the key from the pop-up as it will only appear once. If you accidentally lose it, you
+    will need to create a new key.
+  </Callout>
 
   ### Configure Groq in LobeChat
 

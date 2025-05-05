@@ -1,5 +1,5 @@
-import { ActionIcon, Avatar, Icon } from '@lobehub/ui';
-import { Divider, Popover, Switch, Tag, Typography } from 'antd';
+import { ActionIcon, Avatar, Icon, Tag } from '@lobehub/ui';
+import { Divider, Popover, Switch, Typography } from 'antd';
 import { createStyles } from 'antd-style';
 import { TooltipPlacement } from 'antd/es/tooltip';
 import isEqual from 'fast-deep-equal';
@@ -9,8 +9,8 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flexbox } from 'react-layout-kit';
 
-import { useGlobalStore } from '@/store/global';
-import { syncSettingsSelectors } from '@/store/global/selectors';
+import { useUserStore } from '@/store/user';
+import { syncSettingsSelectors } from '@/store/user/selectors';
 import { pathString } from '@/utils/url';
 
 import EnableTag from './EnableTag';
@@ -39,7 +39,7 @@ const EnableSync = memo<EnableSyncProps>(({ hiddenActions, placement = 'bottomLe
   const { t } = useTranslation('common');
 
   const { styles, theme } = useStyles();
-  const [syncStatus, isSyncing, channelName, enableWebRTC, setSettings] = useGlobalStore((s) => [
+  const [syncStatus, isSyncing, channelName, enableWebRTC, setSettings] = useUserStore((s) => [
     s.syncStatus,
     s.syncStatus === 'syncing',
     syncSettingsSelectors.webrtcChannelName(s),
@@ -47,7 +47,7 @@ const EnableSync = memo<EnableSyncProps>(({ hiddenActions, placement = 'bottomLe
     s.setSettings,
   ]);
 
-  const users = useGlobalStore((s) => s.syncAwareness, isEqual);
+  const users = useUserStore((s) => s.syncAwareness, isEqual);
 
   const switchSync = (enabled: boolean) => {
     setSettings({ sync: { webrtc: { enabled } } });
@@ -81,7 +81,7 @@ const EnableSync = memo<EnableSyncProps>(({ hiddenActions, placement = 'bottomLe
                     <Icon
                       color={theme.purple}
                       icon={user.isMobile ? LucideSmartphone : LucideLaptop}
-                      size={{ fontSize: 24 }}
+                      size={24}
                     />
                   }
                   background={theme.purple1}

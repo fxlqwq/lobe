@@ -1,222 +1,106 @@
-import { messageService } from '@/services/message';
-import { sessionService } from '@/services/session';
-import { topicService } from '@/services/topic';
-import { useGlobalStore } from '@/store/global';
-import { settingsSelectors } from '@/store/global/selectors';
-import { useSessionStore } from '@/store/session';
-import { sessionSelectors } from '@/store/session/selectors';
-import { ConfigFile } from '@/types/exportConfig';
-import { ChatMessage } from '@/types/message';
-import { LobeSessions, SessionGroupItem } from '@/types/session';
-import { GlobalSettings } from '@/types/settings';
-import { ChatTopic } from '@/types/topic';
-import { createConfigFile, exportConfigFile } from '@/utils/config';
+import dayjs from 'dayjs';
 
-export interface ImportResult {
-  added: number;
-  errors: number;
-  skips: number;
-}
-export interface ImportResults {
-  messages?: ImportResult;
-  sessionGroups?: ImportResult;
-  sessions: ImportResult;
-  topics?: ImportResult;
-}
+import { BRANDING_NAME } from '@/const/branding';
+import { isDeprecatedEdition, isServerMode } from '@/const/version';
+import { CURRENT_CONFIG_VERSION } from '@/migrations';
+import { ImportPgDataStructure } from '@/types/export';
+import { downloadFile } from '@/utils/client/downloadFile';
+import { exportJSONFile } from '@/utils/client/exportFile';
+
+import { exportService } from './export';
+import { configService as deprecatedExportService } from './export/_deprecated';
 
 class ConfigService {
-  /**
-   * import sessions from files
-   * @param sessions
-   */
-  importSessions = async (sessions: LobeSessions) => {
-    return await sessionService.batchCreateSessions(sessions);
+  exportAll = async () => {
+    // TODO: remove this in V2
+    if (isDeprecatedEdition) {
+      const config = await deprecatedExportService.exportAll();
+      const filename = `${BRANDING_NAME}-config-v${CURRENT_CONFIG_VERSION}.json`;
+      exportJSONFile(config, filename);
+      return;
+    }
+
+    const { data, url } = await exportService.exportData();
+    const filename = `${dayjs().format('YYYY-MM-DD-hh-mm')}_${BRANDING_NAME}-data.json`;
+
+    // if url exists, means export data from server and upload the data to S3
+    // just need to download the file
+    if (url) {
+      await downloadFile(url, filename);
+      return;
+    }
+
+    // or export to file with the data
+    const result = await this.createDataStructure(data, isServerMode ? 'postgres' : 'pglite');
+
+    exportJSONFile(result, filename);
   };
-  importMessages = async (messages: ChatMessage[]) => {
-    return messageService.batchCreate(messages);
-  };
-  importSettings = async (settings: GlobalSettings) => {
-    useGlobalStore.getState().importAppSettings(settings);
-  };
-  importTopics = async (topics: ChatTopic[]) => {
-    return topicService.batchCreateTopics(topics);
-  };
-  importSessionGroups = async (sessionGroups: SessionGroupItem[]) => {
-    return sessionService.batchCreateSessionGroups(sessionGroups || []);
-  };
 
-  importConfigState = async (config: ConfigFile): Promise<ImportResults | undefined> => {
-    switch (config.exportType) {
-      case 'settings': {
-        await this.importSettings(config.state.settings);
-
-        break;
-      }
-
-      case 'agents': {
-        const sessionGroups = await this.importSessionGroups(config.state.sessionGroups);
-
-        const data = await this.importSessions(config.state.sessions);
-        return {
-          sessionGroups: this.mapImportResult(sessionGroups),
-          sessions: this.mapImportResult(data),
-        };
-      }
-
-      case 'all': {
-        await this.importSettings(config.state.settings);
-
-        const sessionGroups = await this.importSessionGroups(config.state.sessionGroups);
-
-        const [sessions, messages, topics] = await Promise.all([
-          this.importSessions(config.state.sessions),
-          this.importMessages(config.state.messages),
-          this.importTopics(config.state.topics),
-        ]);
-
-        return {
-          messages: this.mapImportResult(messages),
-          sessionGroups: this.mapImportResult(sessionGroups),
-          sessions: this.mapImportResult(sessions),
-          topics: this.mapImportResult(topics),
-        };
-      }
-
-      case 'sessions': {
-        const sessionGroups = await this.importSessionGroups(config.state.sessionGroups);
-
-        const [sessions, messages, topics] = await Promise.all([
-          this.importSessions(config.state.sessions),
-          this.importMessages(config.state.messages),
-          this.importTopics(config.state.topics),
-        ]);
-
-        return {
-          messages: this.mapImportResult(messages),
-          sessionGroups: this.mapImportResult(sessionGroups),
-          sessions: this.mapImportResult(sessions),
-          topics: this.mapImportResult(topics),
-        };
-      }
+  exportAgents = async () => {
+    // TODO: remove this in V2
+    if (isDeprecatedEdition) {
+      const config = await deprecatedExportService.exportAgents();
+      const filename = `${BRANDING_NAME}-agents-v${CURRENT_CONFIG_VERSION}.json`;
+      exportJSONFile(config, filename);
+      return;
     }
   };
 
-  /**
-   * export all agents
-   */
-  exportAgents = async () => {
-    const agents = await sessionService.getAllAgents();
-    const sessionGroups = await sessionService.getSessionGroups();
+  exportSingleAgent = async (agentId: string) => {
+    // TODO: remove this in V2
+    if (isDeprecatedEdition) {
+      const result = await deprecatedExportService.exportSingleAgent(agentId);
+      if (!result) return;
 
-    const config = createConfigFile('agents', { sessionGroups, sessions: agents });
-
-    exportConfigFile(config, 'agents');
+      const filename = `${BRANDING_NAME}-${result.title}-v${CURRENT_CONFIG_VERSION}.json`;
+      exportJSONFile(result.config, filename);
+      return;
+    }
   };
 
-  /**
-   * export all sessions
-   */
   exportSessions = async () => {
-    const sessions = await sessionService.getSessions();
-    const sessionGroups = await sessionService.getSessionGroups();
-    const messages = await messageService.getAllMessages();
-    const topics = await topicService.getAllTopics();
-
-    const config = createConfigFile('sessions', { messages, sessionGroups, sessions, topics });
-
-    exportConfigFile(config, 'sessions');
+    // TODO: remove this in V2
+    if (isDeprecatedEdition) {
+      const config = await deprecatedExportService.exportSessions();
+      const filename = `${BRANDING_NAME}-sessions-v${CURRENT_CONFIG_VERSION}.json`;
+      exportJSONFile(config, filename);
+      return;
+    }
   };
 
-  /**
-   * export a session
-   */
-  exportSingleSession = async (id: string) => {
-    const session = this.getSession(id);
-    if (!session) return;
-
-    const messages = await messageService.getAllMessagesInSession(id);
-    const topics = await topicService.getTopics({ sessionId: id });
-
-    const config = createConfigFile('singleSession', { messages, sessions: [session], topics });
-
-    exportConfigFile(config, `${session.meta?.title}-session`);
-  };
-
-  /**
-   * export a topic
-   */
-  exportSingleTopic = async (sessionId: string, topicId: string) => {
-    const session = this.getSession(sessionId);
-    if (!session) return;
-
-    const messages = await messageService.getMessages(sessionId, topicId);
-    const topics = await topicService.getTopics({ sessionId });
-
-    const topic = topics.find((item) => item.id === topicId);
-    if (!topic) return;
-
-    const config = createConfigFile('singleSession', {
-      messages,
-      sessions: [session],
-      topics: [topic],
-    });
-
-    exportConfigFile(config, `${topic.title}-topic`);
-  };
-
-  exportSingleAgent = async (id: string) => {
-    const agent = this.getAgent(id);
-    if (!agent) return;
-
-    const config = createConfigFile('agents', { sessionGroups: [], sessions: [agent] });
-
-    exportConfigFile(config, agent.meta?.title || 'agent');
-  };
-
-  /**
-   * export settings
-   */
   exportSettings = async () => {
-    const settings = this.getSettings();
-
-    const config = createConfigFile('settings', { settings });
-
-    exportConfigFile(config, 'settings');
+    // TODO: remove this in V2
+    if (isDeprecatedEdition) {
+      const config = await deprecatedExportService.exportSessions();
+      const filename = `${BRANDING_NAME}-settings-v${CURRENT_CONFIG_VERSION}.json`;
+      exportJSONFile(config, filename);
+      return;
+    }
   };
 
-  /**
-   * export all data
-   */
-  exportAll = async () => {
-    const sessions = await sessionService.getSessions();
-    const sessionGroups = await sessionService.getSessionGroups();
-    const messages = await messageService.getAllMessages();
-    const topics = await topicService.getAllTopics();
-    const settings = this.getSettings();
+  exportSingleSession = async (sessionId: string) => {
+    // TODO: remove this in V2
+    if (isDeprecatedEdition) {
+      const data = await deprecatedExportService.exportSingleSession(sessionId);
+      if (!data) return;
 
-    const config = createConfigFile('all', { messages, sessionGroups, sessions, settings, topics });
-
-    exportConfigFile(config, 'config');
+      const filename = `${BRANDING_NAME}-${data.title}-v${CURRENT_CONFIG_VERSION}.json`;
+      exportJSONFile(data.config, filename);
+      return;
+    }
   };
 
-  private getSettings = () => settingsSelectors.exportSettings(useGlobalStore.getState());
+  private createDataStructure = async (
+    data: any,
+    mode: 'pglite' | 'postgres',
+  ): Promise<ImportPgDataStructure> => {
+    const { default: json } = await import('@/database/client/migrations.json');
+    const latestHash = json.at(-1)?.hash;
+    if (!latestHash) {
+      throw new Error('Not find database sql hash');
+    }
 
-  private getSession = (id: string) =>
-    sessionSelectors.getSessionById(id)(useSessionStore.getState());
-
-  private getAgent = (id: string) =>
-    sessionSelectors.getSessionById(id)(useSessionStore.getState());
-
-  private mapImportResult = (input: {
-    added: number;
-    errors?: Error[];
-    skips: string[];
-  }): ImportResult => {
-    return {
-      added: input.added,
-      errors: input.errors?.length || 0,
-      skips: input.skips.length,
-    };
+    return { data, mode, schemaHash: latestHash };
   };
 }
 

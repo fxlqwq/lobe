@@ -1,23 +1,16 @@
-import { Button } from 'antd';
-import { memo, useMemo } from 'react';
+import { ProviderIcon } from '@lobehub/icons';
+import { Button } from '@lobehub/ui';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Center, Flexbox } from 'react-layout-kit';
 
 import { ModelProvider } from '@/libs/agent-runtime';
 import { useChatStore } from '@/store/chat';
+import { GlobalLLMProviderKey } from '@/types/user/settings';
 
-import AnthropicForm from './Anthropic';
 import BedrockForm from './Bedrock';
-import GoogleForm from './Google';
-import GroqForm from './Groq';
-import MistralForm from './Mistral';
-import MoonshotForm from './Moonshot';
-import OpenAIForm from './OpenAI';
-import OpenRouterForm from './OpenRouter';
-import PerplexityForm from './Perplexity';
-import TogetherAIForm from './TogetherAI';
-import ZeroOneForm from './ZeroOne';
-import ZhipuForm from './Zhipu';
+import { LoadingContext } from './LoadingContext';
+import ProviderApiKeyForm from './ProviderApiKeyForm';
 
 interface APIKeyFormProps {
   id: string;
@@ -26,86 +19,86 @@ interface APIKeyFormProps {
 
 const APIKeyForm = memo<APIKeyFormProps>(({ id, provider }) => {
   const { t } = useTranslation('error');
+  const [loading, setLoading] = useState(false);
 
-  const [resend, deleteMessage] = useChatStore((s) => [s.internalResendMessage, s.deleteMessage]);
+  const [resend, deleteMessage] = useChatStore((s) => [s.regenerateMessage, s.deleteMessage]);
 
-  const action = useMemo(() => {
-    switch (provider as ModelProvider) {
-      case ModelProvider.Bedrock: {
-        return <BedrockForm />;
-      }
-
-      case ModelProvider.Google: {
-        return <GoogleForm />;
-      }
-
-      case ModelProvider.ZhiPu: {
-        return <ZhipuForm />;
-      }
-
-      case ModelProvider.Mistral: {
-        return <MistralForm />;
-      }
-
-      case ModelProvider.Moonshot: {
-        return <MoonshotForm />;
-      }
-
-      case ModelProvider.Perplexity: {
-        return <PerplexityForm />;
-      }
-
+  const apiKeyPlaceholder = useMemo(() => {
+    switch (provider) {
       case ModelProvider.Anthropic: {
-        return <AnthropicForm />;
-      }
-
-      case ModelProvider.Groq: {
-        return <GroqForm />;
+        return 'sk-ant_*****************************';
       }
 
       case ModelProvider.OpenRouter: {
-        return <OpenRouterForm />;
+        return 'sk-or-********************************';
       }
 
-      case ModelProvider.TogetherAI: {
-        return <TogetherAIForm />;
+      case ModelProvider.Perplexity: {
+        return 'pplx-********************************';
       }
 
-      case ModelProvider.ZeroOne: {
-        return <ZeroOneForm />;
+      case ModelProvider.ZhiPu: {
+        return '*********************.*************';
       }
 
-      default:
-      case ModelProvider.OpenAI: {
-        return <OpenAIForm />;
+      case ModelProvider.Groq: {
+        return 'gsk_*****************************';
+      }
+
+      case ModelProvider.DeepSeek: {
+        return 'sk_******************************';
+      }
+
+      case ModelProvider.Qwen: {
+        return 'sk-********************************';
+      }
+
+      case ModelProvider.Github: {
+        return 'ghp_*****************************';
+      }
+
+      default: {
+        return '*********************************';
       }
     }
   }, [provider]);
 
   return (
-    <Center gap={16} style={{ maxWidth: 300 }}>
-      {action}
-      <Flexbox gap={12} width={'100%'}>
-        <Button
-          block
-          onClick={() => {
-            resend(id);
-            deleteMessage(id);
-          }}
-          style={{ marginTop: 8 }}
-          type={'primary'}
-        >
-          {t('unlock.confirm')}
-        </Button>
-        <Button
-          onClick={() => {
-            deleteMessage(id);
-          }}
-        >
-          {t('unlock.closeMessage')}
-        </Button>
-      </Flexbox>
-    </Center>
+    <LoadingContext value={{ loading, setLoading }}>
+      <Center gap={16} style={{ maxWidth: 300 }}>
+        {provider === ModelProvider.Bedrock ? (
+          <BedrockForm />
+        ) : (
+          <ProviderApiKeyForm
+            apiKeyPlaceholder={apiKeyPlaceholder}
+            avatar={<ProviderIcon provider={provider} size={80} type={'avatar'} />}
+            provider={provider as GlobalLLMProviderKey}
+            showEndpoint={provider === ModelProvider.OpenAI}
+          />
+        )}
+        <Flexbox gap={12} width={'100%'}>
+          <Button
+            block
+            disabled={loading}
+            onClick={() => {
+              resend(id);
+              deleteMessage(id);
+            }}
+            style={{ marginTop: 8 }}
+            type={'primary'}
+          >
+            {t('unlock.confirm')}
+          </Button>
+          <Button
+            onClick={() => {
+              deleteMessage(id);
+            }}
+          >
+            {t('unlock.closeMessage')}
+          </Button>
+        </Flexbox>
+      </Center>
+    </LoadingContext>
   );
 });
 

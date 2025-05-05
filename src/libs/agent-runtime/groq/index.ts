@@ -1,78 +1,77 @@
-import { OpenAIStream, StreamingTextResponse } from 'ai';
-import OpenAI, { ClientOptions } from 'openai';
+import type { ChatModelCard } from '@/types/llm';
 
-import { LobeRuntimeAI } from '../BaseAI';
 import { AgentRuntimeErrorType } from '../error';
-import { ChatCompetitionOptions, ChatStreamPayload, ModelProvider } from '../types';
-import { AgentRuntimeError } from '../utils/createError';
-import { debugStream } from '../utils/debugStream';
-import { desensitizeUrl } from '../utils/desensitizeUrl';
-import { handleOpenAIError } from '../utils/handleOpenAIError';
+import { ModelProvider } from '../types';
+import { LobeOpenAICompatibleFactory } from '../utils/openaiCompatibleFactory';
 
-const DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
-
-export class LobeGroq implements LobeRuntimeAI {
-  private client: OpenAI;
-
-  baseURL: string;
-
-  constructor({ apiKey, baseURL = DEFAULT_BASE_URL, ...res }: ClientOptions) {
-    if (!apiKey) throw AgentRuntimeError.createError(AgentRuntimeErrorType.InvalidGroqAPIKey);
-
-    this.client = new OpenAI({ apiKey, baseURL, ...res });
-    this.baseURL = this.client.baseURL;
-  }
-
-  async chat(payload: ChatStreamPayload, options?: ChatCompetitionOptions) {
-    try {
-      const response = await this.client.chat.completions.create(
-        payload as unknown as OpenAI.ChatCompletionCreateParamsStreaming,
-      );
-      const [prod, debug] = response.tee();
-
-      if (process.env.DEBUG_GROQ_CHAT_COMPLETION === '1') {
-        debugStream(debug.toReadableStream()).catch(console.error);
-      }
-
-      return new StreamingTextResponse(OpenAIStream(prod, options?.callback), {
-        headers: options?.headers,
-      });
-    } catch (error) {
-      let desensitizedEndpoint = this.baseURL;
-
-      if (this.baseURL !== DEFAULT_BASE_URL) {
-        desensitizedEndpoint = desensitizeUrl(this.baseURL);
-      }
-
-      if ('status' in (error as any)) {
-        switch ((error as Response).status) {
-          case 401: {
-            throw AgentRuntimeError.chat({
-              endpoint: desensitizedEndpoint,
-              error: error as any,
-              errorType: AgentRuntimeErrorType.InvalidGroqAPIKey,
-              provider: ModelProvider.Groq,
-            });
-          }
-
-          default: {
-            break;
-          }
-        }
-      }
-
-      const { errorResult, RuntimeError } = handleOpenAIError(error);
-
-      const errorType = RuntimeError || AgentRuntimeErrorType.GroqBizError;
-
-      throw AgentRuntimeError.chat({
-        endpoint: desensitizedEndpoint,
-        error: errorResult,
-        errorType,
-        provider: ModelProvider.Groq,
-      });
-    }
-  }
+export interface GroqModelCard {
+  context_window: number;
+  id: string;
 }
 
-export default LobeGroq;
+export const LobeGroq = LobeOpenAICompatibleFactory({
+  baseURL: 'https://api.groq.com/openai/v1',
+  chatCompletion: {
+    handleError: (error) => {
+      // 403 means the location is not supported
+      if (error.status === 403)
+        return { error, errorType: AgentRuntimeErrorType.LocationNotSupportError };
+    },
+    handlePayload: (payload) => {
+      const { temperature, ...restPayload } = payload;
+      return {
+        ...restPayload,
+        // disable stream for tools due to groq dont support
+        stream: !payload.tools,
+
+        temperature: temperature <= 0 ? undefined : temperature,
+      } as any;
+    },
+  },
+  debug: {
+    chatCompletion: () => process.env.DEBUG_GROQ_CHAT_COMPLETION === '1',
+  },
+  models: async ({ client }) => {
+    const { LOBE_DEFAULT_MODEL_LIST } = await import('@/config/aiModels');
+
+    const functionCallKeywords = [
+      'tool',
+      'llama-3.3',
+      'llama-3.1',
+      'llama3-',
+      'mixtral-8x7b-32768',
+      'gemma2-9b-it',
+    ];
+
+    const reasoningKeywords = ['deepseek-r1'];
+
+    const modelsPage = (await client.models.list()) as any;
+    const modelList: GroqModelCard[] = modelsPage.data;
+
+    return modelList
+      .map((model) => {
+        const knownModel = LOBE_DEFAULT_MODEL_LIST.find(
+          (m) => model.id.toLowerCase() === m.id.toLowerCase(),
+        );
+
+        return {
+          contextWindowTokens: model.context_window,
+          displayName: knownModel?.displayName ?? undefined,
+          enabled: knownModel?.enabled || false,
+          functionCall:
+            functionCallKeywords.some((keyword) => model.id.toLowerCase().includes(keyword)) ||
+            knownModel?.abilities?.functionCall ||
+            false,
+          id: model.id,
+          reasoning:
+            reasoningKeywords.some((keyword) => model.id.toLowerCase().includes(keyword)) ||
+            knownModel?.abilities?.reasoning ||
+            false,
+          vision:
+            model.id.toLowerCase().includes('vision') || knownModel?.abilities?.vision || false,
+        };
+      })
+      .filter(Boolean) as ChatModelCard[];
+  },
+  provider: ModelProvider.Groq,
+});

@@ -2,9 +2,18 @@
   "about": {
     "title": "Hakkında"
   },
+  "agentTab": {
+    "chat": "Sohbet Tercihi",
+    "meta": "Asistan Bilgisi",
+    "modal": "Model Ayarları",
+    "opening": "Açılış Ayarları",
+    "plugin": "Eklenti Ayarları",
+    "prompt": "Karakter Ayarları",
+    "tts": "Metin Okuma Hizmeti"
+  },
   "analytics": {
     "telemetry": {
-      "desc": "Anonim kullanım verilerini göndererek LobeChat'in genel kullanıcı deneyimini iyileştirmemize yardımcı olabilirsiniz",
+      "desc": "{{appName}} genel kullanıcı deneyimini geliştirmemize yardımcı olmak için telemetri verilerini göndermeyi seçerek katkıda bulunabilirsiniz.",
       "title": "Anonim Kullanım Verileri Gönder"
     },
     "title": "Analitik"
@@ -22,232 +31,102 @@
       "confirm": "Tüm ayarları sıfırlamayı onaylıyor musunuz?",
       "currentVersion": "Geçerli Sürüm",
       "desc": "Tüm ayarları varsayılan değerlere sıfırlar",
+      "success": "Tüm ayarlar sıfırlandı",
       "title": "Tüm Ayarları Sıfırla"
     }
   },
   "header": {
+    "desc": "Tercihler ve model ayarları.",
     "global": "Genel Ayarlar",
     "session": "Oturum Ayarları",
-    "sessionWithName": "Oturum Ayarları · {{name}}"
+    "sessionDesc": "Karakter ayarları ve oturum tercihleri.",
+    "sessionWithName": "Oturum Ayarları · {{name}}",
+    "title": "Ayarlar"
+  },
+  "hotkey": {
+    "conflicts": "Mevcut kısayol tuşlarıyla çakışıyor",
+    "group": {
+      "conversation": "Sohbet",
+      "essential": "Temel"
+    },
+    "invalidCombination": "Kısayol tuşu en az bir modifiye tuşu (Ctrl, Alt, Shift) ve bir normal tuş içermelidir",
+    "record": "Kısayol tuşunu kaydetmek için tuşa basın",
+    "reset": "Varsayılan kısayol tuşlarına sıfırla",
+    "title": "Kısayollar"
   },
   "llm": {
-    "anthropic": {
-      "endpoint": {
-        "desc": "Varsayılan adres dışında, http(s):// içermelidir",
-        "placeholder": "https://api.anthropic.com",
-        "title": "API Proxy Adresi"
-      },
-      "title": "Anthropic",
-      "token": {
-        "desc": "Anthropic'ten gelen API Key'i girin",
-        "placeholder": "Anthropic API Key",
-        "title": "API Key"
-      }
-    },
-    "azure": {
-      "azureApiVersion": {
-        "desc": "Azure'un API versiyonu, YYYY-AA-GG formatına uygun, [en son versiyonu](https://learn.microsoft.com/zh-cn/azure/ai-services/openai/reference#chat-completions) kontrol edin",
-        "fetch": "Listeyi al",
-        "title": "Azure Api Versiyonu"
-      },
-      "deployments": {
-        "desc": "id=name sözdizimini kullanarak dağıtım modellerinizi girin (eğer dağıtım adı ve model adı aynıysa, sadece model adını yazabilirsiniz), birden fazla model için virgül (,) kullanın",
-        "title": "Azure Dağıtım Modelleri Listesi"
-      },
-      "endpoint": {
-        "desc": "Azure portalından kaynağı kontrol ederken, bu değeri \"Anahtarlar ve uç noktalar\" bölümünde bulabilirsiniz",
-        "placeholder": "https://docs-test-001.openai.azure.com",
-        "title": "Azure API Adresi"
-      },
-      "models": {
-        "desc": "Desteklenen modeller",
-        "title": "Model Listesi"
-      },
-      "title": "Azure OpenAI",
-      "token": {
-        "desc": "Azure portalından kaynağı kontrol ederken, bu değeri \"Anahtarlar ve uç noktalar\" bölümünde bulabilirsiniz. KEY1 veya KEY2 kullanabilirsiniz",
-        "placeholder": "Azure API Key",
-        "title": "API Key"
-      }
-    },
-    "bedrock": {
-      "accessKeyId": {
-        "desc": "AWS Access Key Id girin",
-        "placeholder": "AWS Access Key Id",
-        "title": "AWS Access Key Id"
-      },
-      "checker": {
-        "desc": "AccessKeyId / SecretAccessKey'in doğru girilip girilmediğini test edin"
-      },
-      "region": {
-        "desc": "AWS Bölgesi girin",
-        "placeholder": "AWS Region",
-        "title": "AWS Bölgesi"
-      },
-      "secretAccessKey": {
-        "desc": "AWS Secret Access Key girin",
-        "placeholder": "AWS Secret Access Key",
-        "title": "AWS Secret Access Key"
-      },
-      "title": "Bedrock"
+    "aesGcm": "Anahtarınız ve vekil adresiniz <1>AES-GCM</1> şifreleme algoritması kullanılarak şifrelenecektir",
+    "apiKey": {
+      "desc": "Lütfen {{name}} API Anahtarınızı girin",
+      "placeholder": "{{name}} API Anahtarı",
+      "title": "API Anahtarı"
     },
     "checker": {
       "button": "Kontrol Et",
-      "desc": "Api Anahtarı ve vekil adresinin doğru şekilde doldurulup doldurulmadığını test eder",
+      "desc": "API Anahtarı ve vekil adresinin doğru şekilde doldurulup doldurulmadığını test eder",
       "pass": "Kontrol Başarılı",
       "title": "Bağlantı Kontrolü"
     },
-    "google": {
-      "title": "Google",
-      "token": {
-        "desc": "Google'dan gelen API Key'i girin",
-        "placeholder": "Google API Key",
-        "title": "API Key"
+    "customModelCards": {
+      "addNew": "{{id}} modelini oluştur ve ekle",
+      "config": "Modeli Yapılandır",
+      "confirmDelete": "Özel modeli silmek üzeresiniz, silindikten sonra geri alınamaz, lütfen dikkatli olun.",
+      "modelConfig": {
+        "azureDeployName": {
+          "extra": "Azure OpenAI'da gerçekleştirilen istek alanı",
+          "placeholder": "Azure'daki model dağıtım adını girin",
+          "title": "Model Dağıtım Adı"
+        },
+        "displayName": {
+          "placeholder": "ChatGPT, GPT-4 vb. gibi modelin görüntü adını girin",
+          "title": "Model Görüntü Adı"
+        },
+        "files": {
+          "extra": "Mevcut dosya yükleme uygulaması yalnızca bir Hack çözümüdür ve yalnızca kendi denemeleriniz için geçerlidir. Tam dosya yükleme yeteneği için lütfen sonraki uygulamaları bekleyin.",
+          "title": "Dosya Yükleme Desteği"
+        },
+        "functionCall": {
+          "extra": "Bu yapılandırma yalnızca uygulamadaki işlev çağırma yeteneğini açacaktır; işlev çağırmanın desteklenip desteklenmediği tamamen modele bağlıdır, lütfen bu modelin işlev çağırma yeteneğini kendiniz test edin.",
+          "title": "Fonksiyon Çağrısını Destekle"
+        },
+        "id": {
+          "extra": "Model etiketi olarak görüntülenecektir",
+          "placeholder": "Örneğin gpt-4-turbo-preview veya claude-2.1 gibi bir model kimliği girin",
+          "title": "Model Kimliği"
+        },
+        "modalTitle": "Özel Model Yapılandırması",
+        "tokens": {
+          "title": "Maksimum token sayısı"
+        },
+        "vision": {
+          "extra": "Bu yapılandırma yalnızca uygulamadaki resim yükleme yapılandırmasını açacaktır; tanıma desteği tamamen modele bağlıdır, lütfen bu modelin görsel tanıma yeteneğini kendiniz test edin.",
+          "title": "Görüntü Tanımayı Destekle"
+        }
       }
     },
-    "groq": {
-      "title": "Groq",
-      "token": {
-        "desc": "Groq'tan gelen API Key'i girin",
-        "placeholder": "Groq API Key",
-        "title": "API Key"
-      }
+    "fetchOnClient": {
+      "desc": "İstemci tarafından alınan veri: Tarayıcı, doğrudan oturum isteği gönderir ve yanıt hızını artırabilir.",
+      "title": "İstemci Tarafından Veri Alımı"
     },
-    "mistral": {
-      "title": "Mistral AI",
-      "token": {
-        "desc": "Mistral AI'dan gelen API Key'i girin",
-        "placeholder": "Mistral AI API Key",
-        "title": "API Key"
-      }
+    "fetcher": {
+      "clear": "Alınan modeli temizle",
+      "fetch": "Modelleri Al",
+      "fetching": "Modelleri alınıyor...",
+      "latestTime": "Son güncelleme zamanı: {{time}}",
+      "noLatestTime": "Liste henüz alınamadı"
     },
-    "moonshot": {
-      "title": "Ay'ın Karanlık Yüzü",
-      "token": {
-        "desc": "Moonshot AI'dan gelen API Key'i girin",
-        "placeholder": "Moonshot AI API Key",
-        "title": "API Key"
-      }
+    "helpDoc": "Yardım Belgeleri",
+    "modelList": {
+      "desc": "Görüntülenecek modeli seçin, seçilen model model listesinde görüntülenecektir",
+      "placeholder": "Lütfen listeden bir model seçin",
+      "title": "Model Listesi",
+      "total": "Toplam {{count}} model kullanılabilir"
     },
-    "ollama": {
-      "checker": {
-        "desc": "Proxy adresinin doğru girilip girilmediğini test edin"
-      },
-      "customModelName": {
-        "desc": "Özel modeller ekleyin, birden fazla model için virgül (,) kullanın",
-        "placeholder": "vicuna,llava,codellama,llama2:13b-text",
-        "title": "Özel Model Adları"
-      },
-      "endpoint": {
-        "desc": "Ollama arayüz proxy adresini girin, yerel olarak belirtilmemişse boş bırakılabilir",
-        "placeholder": "http://127.0.0.1:11434/v1",
-        "title": "Arayüz Proxy Adresi"
-      },
-      "title": "Ollama"
+    "proxyUrl": {
+      "desc": "Varsayılan adres dışında, http(s):// içermelidir",
+      "title": "API Proxy Adresi"
     },
-    "openai": {
-      "azureApiVersion": {
-        "desc": "Azure'un API versiyonu, YYYY-AA-GG formatına uygun, [en son versiyonu](https://learn.microsoft.com/zh-cn/azure/ai-services/openai/reference#chat-completions) kontrol edin",
-        "fetch": "Listeyi al",
-        "title": "Azure Api Versiyonu"
-      },
-      "customModelName": {
-        "desc": "Özel modeller ekleyin, birden fazla model için virgül (,) kullanın",
-        "placeholder": "model1,model2,model3",
-        "title": "Özel Model Adları"
-      },
-      "endpoint": {
-        "desc": "Varsayılan adres dışında, http(s):// içermelidir",
-        "placeholder": "https://api.openai.com/v1",
-        "title": "Arayüz Proxy Adresi"
-      },
-      "models": {
-        "count": "Toplam {{count}} model desteklenmektedir",
-        "desc": "Desteklenen modeller",
-        "fetch": "Model listesini al",
-        "notSupport": "Azure OpenAI model listesini görüntülemeyi desteklemiyor",
-        "notSupportTip": "Dağıtım adının model adıyla aynı olduğundan emin olmanız gerekmektedir",
-        "refetch": "Model listesini yeniden al",
-        "title": "Model Listesi"
-      },
-      "title": "OpenAI",
-      "token": {
-        "desc": "Kendi OpenAI Key'inizi kullanın",
-        "placeholder": "OpenAI API Key",
-        "title": "OpenAI API Key"
-      },
-      "useAzure": {
-        "desc": "Azure tarafından sağlanan OpenAI hizmetini kullanın",
-        "fetch": "Listeyi al",
-        "serverConfig": "Yönetici, sunucu tarafında Azure OpenAI'yi etkinleştirdi, geçiş yapılması yasaktır",
-        "title": "Azure OpenAI"
-      }
-    },
-    "openrouter": {
-      "checker": {
-        "desc": "Proxy adresinin doğru girilip girilmediğini test edin"
-      },
-      "customModelName": {
-        "desc": "Özel modeller ekleyin, birden fazla model için virgül (,) kullanın",
-        "placeholder": "mistralai/mistral-7b-instruct:free,openchat/openchat-7b:free",
-        "title": "Özel Model Adları"
-      },
-      "title": "OpenRouter",
-      "token": {
-        "desc": "OpenRouter AI'dan gelen API Key'i girin",
-        "placeholder": "OpenRouter AI API Key",
-        "title": "API Key"
-      }
-    },
-    "perplexity": {
-      "title": "Perplexity",
-      "token": {
-        "desc": "Perplexity AI'dan gelen API Key'i girin",
-        "placeholder": "Perplexity AI API Key",
-        "title": "API Key"
-      }
-    },
-    "togetherai": {
-      "checker": {
-        "desc": "Proxy adresinin doğru girilip girilmediğini test edin"
-      },
-      "customModelName": {
-        "desc": "Özel modeller ekleyin, birden fazla model için virgül (,) kullanın",
-        "placeholder": "togethercomputer/Llama-2-7B-32K-Instruct,teknium/OpenHermes-2-Mistral-7B",
-        "title": "Özel Model Adları"
-      },
-      "title": "TogetherAI",
-      "token": {
-        "desc": "TogetherAI AI'dan gelen API Key'i girin",
-        "placeholder": "TogetherAI AI API Key",
-        "title": "API Key"
-      }
-    },
-    "waitingForMore": "Daha fazla model eklenmesi planlanıyor ✨",
-    "zeroone": {
-      "title": "01.AI Sıfır Bir",
-      "token": {
-        "desc": "01.AI Sıfır Bir'den gelen API Key'i girin",
-        "placeholder": "01.AI Sıfır Bir API Key",
-        "title": "API Key"
-      }
-    },
-    "zhipu": {
-      "title": "Zeka Haritası",
-      "token": {
-        "desc": "Zeka Haritası'ndan gelen API Key'i girin",
-        "placeholder": "Zhipu API Key",
-        "title": "API Key"
-      }
-    }
-  },
-  "ollama": {
-    "download": {
-      "desc": "Ollama bu modeli indiriyor, lütfen bu sayfayı kapatmamaya çalışın. Yeniden indirme durumunda kaldığı yerden devam edecektir.",
-      "remainingTime": "Kalan Zaman",
-      "speed": "İndirme Hızı",
-      "title": "{{model}} Modeli İndiriliyor"
-    }
+    "waitingForMore": "Daha fazla model eklenmesi planlanıyor"
   },
   "plugin": {
     "addTooltip": "Eklenti Ekle",
@@ -271,6 +150,7 @@
       "title": "Arka Plan Rengi"
     },
     "description": {
+      "desc": "Asistanınızı basitçe tanıtın, karakter ayarı olarak kullanılmaz",
       "placeholder": "Asistan açıklamasını girin",
       "title": "Asistan Açıklaması"
     },
@@ -282,7 +162,9 @@
       "placeholder": "Prompt girin",
       "title": "Rol Ayarı"
     },
+    "submit": "Asistan bilgilerini güncelle",
     "tag": {
+      "desc": "Asistan etiketleri, asistan pazarında gösterilecektir",
       "placeholder": "Etiket girin",
       "title": "Etiket"
     },
@@ -308,12 +190,13 @@
       "desc": "Sohbet sırasında otomatik olarak bir konu oluşturup oluşturmayacağınız, yalnızca geçici konularda etkilidir",
       "title": "Otomatik Konu Oluştur"
     },
-    "enableCompressThreshold": {
-      "title": "Geçmiş Mesaj Uzunluğu Sıkıştırma Eşiği Kullan"
+    "enableCompressHistory": {
+      "title": "Geçmiş mesajların otomatik özetini aç"
     },
     "enableHistoryCount": {
       "alias": "Sınırsız",
       "limited": "Yalnızca {{number}} konuşma mesajını içerir",
+      "setlimited": "Kullanılan mesaj sayısı",
       "title": "Geçmiş Mesaj Sayısı Sınırlama",
       "unlimited": "Sınırsız geçmiş mesaj sayısı"
     },
@@ -326,44 +209,70 @@
       "placeholder": "Ön işleme şablonu {{text}}, gerçek zamanlı giriş bilgileri ile değiştirilir",
       "title": "Kullanıcı Girişi Ön İşleme"
     },
+    "submit": "Sohbet tercihlerini güncelle",
     "title": "Sohbet Ayarları"
   },
   "settingModel": {
     "enableMaxTokens": {
       "title": "Max Token Sınırlamasını Etkinleştir"
     },
+    "enableReasoningEffort": {
+      "title": "Akıl yürütme yoğunluğunu ayarla"
+    },
     "frequencyPenalty": {
-      "desc": "Değer ne kadar yüksekse, tekrarlayan kelimeleri azaltma olasılığı o kadar yüksektir",
-      "title": "Frequency Penalty"
+      "desc": "Değer ne kadar büyükse, kelime dağarcığı o kadar zengin ve çeşitli olur; değer ne kadar düşükse, kelimeler o kadar sade ve basit olur.",
+      "title": "Kelime Zenginliği"
     },
     "maxTokens": {
       "desc": "Her etkileşim için kullanılan maksimum token sayısı",
       "title": "Max Token Sınırlaması"
     },
     "model": {
-      "desc": "ChatGPT modeli",
-      "list": {
-        "gpt-3.5-turbo": "GPT 3.5",
-        "gpt-3.5-turbo-16k": "GPT 3.5 (16K)",
-        "gpt-4": "GPT 4",
-        "gpt-4-32k": "GPT 4 (32K)"
-      },
+      "desc": "{{provider}} Model",
       "title": "Model"
     },
-    "presencePenalty": {
-      "desc": "Değer ne kadar yüksekse, yeni konulara genişleme olasılığı o kadar yüksektir",
-      "title": "Presence Penalty"
+    "params": {
+      "title": "Gelişmiş Parametreler"
     },
+    "presencePenalty": {
+      "desc": "Değer ne kadar büyükse, farklı ifade biçimlerine yönelme eğilimi artar, kavram tekrarından kaçınılır; değer ne kadar küçükse, tekrar eden kavramlar veya anlatımlar kullanma eğilimi artar, ifade daha tutarlı olur.",
+      "title": "İfade Çeşitliliği"
+    },
+    "reasoningEffort": {
+      "desc": "Değer ne kadar yüksekse, akıl yürütme yeteneği o kadar güçlüdür, ancak yanıt süresi ve Token tüketimini artırabilir",
+      "options": {
+        "high": "Yüksek",
+        "low": "Düşük",
+        "medium": "Orta"
+      },
+      "title": "Akıl yürütme yoğunluğu"
+    },
+    "submit": "Model ayarlarını güncelle",
     "temperature": {
-      "desc": "Değer ne kadar yüksekse, yanıt o kadar rastgele olur",
-      "title": "Randomness",
-      "titleWithValue": "temperature {{value}}"
+      "desc": "Değer ne kadar büyükse, cevap o kadar yaratıcı ve hayal gücü dolu olur; değer ne kadar küçükse, cevap o kadar titizdir.",
+      "title": "Yaratıcılık Aktifliği",
+      "warning": "Yaratıcılık aktifliği değeri çok büyükse, çıktı bozulabilir."
     },
     "title": "Model Ayarları",
     "topP": {
-      "desc": "temperature gibi, ancak temperature ile birlikte değişmez",
-      "title": "Top P"
+      "desc": "Ne kadar olasılığı dikkate alır, değer ne kadar büyükse, daha fazla olası cevabı kabul eder; değer ne kadar küçükse, en olası cevabı seçme eğilimindedir. Yaratıcılık aktifliği ile birlikte değiştirilmesi önerilmez.",
+      "title": "Düşünce Açıklığı"
     }
+  },
+  "settingOpening": {
+    "openingMessage": {
+      "desc": "Sohbet açıldığında gösterilecek açılış mesajı, asistanın işlevlerini tanıtmak için kullanılır",
+      "placeholder": "Merhaba, ben Özelleştirilmiş Asistan, hemen benimle sohbet edebilirsiniz veya Asistan Ayarları'na giderek bilgimi tamamlayabilirsiniz.",
+      "title": "Açılış Mesajı"
+    },
+    "openingQuestions": {
+      "desc": "Sohbetin başlangıcında gösterilecek yönlendirici sorular",
+      "empty": "Henüz soru yok",
+      "placeholder": "Soruyu girin",
+      "repeat": "Soru zaten mevcut",
+      "title": "Açılış Soruları"
+    },
+    "title": "Açılış Ayarları"
   },
   "settingPlugin": {
     "title": "Eklenti Listesi"
@@ -395,6 +304,7 @@
   "settingTTS": {
     "openai": {
       "sttModel": "OpenAI Konuşmadan Metne Modeli",
+      "title": "OpenAI",
       "ttsModel": "OpenAI Metin Seslendirme Modeli"
     },
     "showAllLocaleVoice": {
@@ -414,6 +324,7 @@
       "desc": "'Tarayıcı' yerel konuşmadan metin hizmeti olduğundan",
       "title": "Konuşmadan Metin Hizmeti"
     },
+    "submit": "Ses hizmetini güncelle",
     "title": "Konuşma Hizmeti",
     "tts": "Metin Seslendirme Ayarlar",
     "ttsService": {
@@ -457,6 +368,33 @@
     },
     "title": "Tema Ayarları"
   },
+  "storage": {
+    "actions": {
+      "export": {
+        "button": "Dışa Aktar",
+        "exportType": {
+          "agent": "Yardımcı Ayarlarını Dışa Aktar",
+          "agentWithMessage": "Yardımcı ve Mesajları Dışa Aktar",
+          "all": "Küresel Ayarları ve Tüm Yardımcı Verilerini Dışa Aktar",
+          "allAgent": "Tüm Yardımcı Ayarlarını Dışa Aktar",
+          "allAgentWithMessage": "Tüm Yardımcıları ve Mesajları Dışa Aktar",
+          "globalSetting": "Küresel Ayarları Dışa Aktar"
+        },
+        "title": "Veri Dışa Aktar"
+      },
+      "import": {
+        "button": "İçe Aktar",
+        "title": "Veri İçe Aktar"
+      },
+      "title": "Gelişmiş İşlemler"
+    },
+    "desc": "Mevcut tarayıcıdaki depolama kullanımı",
+    "embeddings": {
+      "used": "Vektör Depolama"
+    },
+    "title": "Veri Depolama",
+    "used": "Depolama Kullanımı"
+  },
   "submitAgentModal": {
     "button": "Asistan Gönder",
     "identifier": "Asistan Kimliği",
@@ -464,47 +402,102 @@
     "placeholder": "Asistan için benzersiz bir kimlik girin, örneğin web-geliştirme",
     "tooltips": "Asistan pazarına paylaşın"
   },
+  "submitFooter": {
+    "reset": "Sıfırla",
+    "submit": "Kaydet",
+    "unSaved": "Kaydedilmemiş değişiklikler",
+    "unSavedWarning": "Şu anda kaydedilmemiş değişiklikler var"
+  },
   "sync": {
     "device": {
       "deviceName": {
-        "hint": "添加名称以便于识别",
-        "placeholder": "请输入设备名称",
-        "title": "设备名称"
+        "hint": "Kolay tanımlama için isim ekleyin",
+        "placeholder": "Lütfen cihaz adını girin",
+        "title": "Cihaz Adı"
       },
-      "title": "设备信息",
-      "unknownBrowser": "未知浏览器",
-      "unknownOS": "未知系统"
+      "title": "Cihaz Bilgisi",
+      "unknownBrowser": "Bilinmeyen Tarayıcı",
+      "unknownOS": "Bilinmeyen Sistem"
     },
     "warning": {
-      "message": "本功能目前仍为实验性功能，可能存在预期外或不稳定的情况，如遇到问题请及时提交反馈。"
+      "tip": "WebRTC'nin uzun bir topluluk beta testinden sonra, genel veri senkronizasyon ihtiyaçlarını kararlı bir şekilde karşılayamayabileceği uyarısı. Lütfen <1> sinyal sunucusunu dağıtın </1> ve ardından kullanın."
     },
     "webrtc": {
       "channelName": {
-        "desc": "WebRTC 将使用此名创建同步频道，确保频道名称唯一",
-        "placeholder": "请输入同步频道名称",
-        "shuffle": "随机生成",
-        "title": "同步频道名称"
+        "desc": "WebRTC bu adı kullanarak senkronizasyon kanalı oluşturacak, kanal adının benzersiz olduğundan emin olun",
+        "placeholder": "Lütfen senkronizasyon kanalı adını girin",
+        "shuffle": "Rastgele Oluştur",
+        "title": "Senkronizasyon Kanalı Adı"
       },
       "channelPassword": {
-        "desc": "添加密码确保频道私密性，只有密码正确时，设备才可加入频道",
-        "placeholder": "请输入同步频道密码",
-        "title": "同步频道密码"
+        "desc": "Kanalın gizliliğini sağlamak için şifre ekleyin, sadece doğru şifre girildiğinde cihaz kanala katılabilir",
+        "placeholder": "Lütfen senkronizasyon kanalı şifresini girin",
+        "title": "Senkronizasyon Kanalı Şifresi"
       },
-      "desc": "实时、点对点的数据通信，需设备同时在线才可同步",
+      "desc": "Gerçek zamanlı, noktadan noktaya veri iletişimi, senkronizasyon için cihazların aynı anda çevrimiçi olması gerekir",
       "enabled": {
-        "invalid": "请填写同步频道名称后再开启",
-        "title": "开启同步"
+        "invalid": "Lütfen sinyal sunucusu ve senkronizasyon kanal adını girerek etkinleştirin",
+        "title": "Senkronizasyonu Etkinleştir"
       },
-      "title": "WebRTC 同步"
+      "signaling": {
+        "desc": "WebRTC senkronizasyon için bu adresi kullanacak",
+        "placeholder": "Lütfen sinyal sunucusu adresini girin",
+        "title": "Sinyal Sunucusu"
+      },
+      "title": "WebRTC Senkronizasyonu"
+    }
+  },
+  "systemAgent": {
+    "agentMeta": {
+      "label": "Asistan Meta Veri Oluşturma Modeli",
+      "modelDesc": "Asistan adı, açıklaması, avatar ve etiket oluşturmak için belirlenen model",
+      "title": "Asistan Bilgilerini Otomatik Oluştur"
+    },
+    "customPrompt": {
+      "addPrompt": "Özel İpucu Ekle",
+      "desc": "Doldurduğunuzda, sistem asistanı içerik oluştururken özel ipucunu kullanacaktır",
+      "placeholder": "Lütfen özel ipucu kelimelerini girin",
+      "title": "Özel İpucu"
+    },
+    "helpInfo": "Yeni bir asistan oluşturduğunuzda, varsayılan asistan ayarları ön ayar olarak kullanılacaktır.",
+    "historyCompress": {
+      "label": "Oturum Geçmişi Modeli",
+      "modelDesc": "Oturum geçmişini sıkıştırmak için kullanılan modeli belirtin",
+      "title": "Oturum Geçmişini Otomatik Olarak Özetle"
+    },
+    "queryRewrite": {
+      "label": "Soru Yeniden Yazım Modeli",
+      "modelDesc": "Kullanıcı sorularını optimize etmek için kullanılan model",
+      "title": "Bilgi Tabanı Soru Yeniden Yazımı"
+    },
+    "thread": {
+      "label": "Alt konu adlandırma modeli",
+      "modelDesc": "Alt konuların otomatik olarak yeniden adlandırılması için kullanılan model",
+      "title": "Alt konu otomatik adlandırma"
+    },
+    "title": "Sistem Asistanı",
+    "topic": {
+      "label": "Konu Adlandırma Modeli",
+      "modelDesc": "Konuların otomatik olarak yeniden adlandırılması için belirlenen model",
+      "title": "Konu Otomatik Adlandırma"
+    },
+    "translation": {
+      "label": "Çeviri Modeli",
+      "modelDesc": "Çeviri için belirlenen model",
+      "title": "Çeviri Asistanı Ayarları"
     }
   },
   "tab": {
     "about": "Hakkında",
     "agent": "Varsayılan Asistan",
     "common": "Genel Ayarlar",
-    "experiment": "实验",
+    "experiment": "Deney",
+    "hotkey": "Kısayollar",
     "llm": "Modeller",
-    "sync": "云端同步",
+    "provider": "Yapay Zeka Hizmet Sağlayıcısı",
+    "storage": "Veri Depolama",
+    "sync": "Bulut Senkronizasyonu",
+    "system-agent": "Sistem Asistanı",
     "tts": "Metin Seslendirme"
   },
   "tools": {

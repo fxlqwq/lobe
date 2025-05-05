@@ -1,26 +1,33 @@
 import { ChatMessage } from '@/types/message';
 
 export interface ChatMessageState {
-  abortController?: AbortController;
   /**
    * @title 当前活动的会话
    * @description 当前正在编辑或查看的会话
    */
   activeId: string;
-  chatLoadingId?: string;
-  inputMessage: string;
-  messageLoadingIds: [];
-  messages: ChatMessage[];
+
+  isCreatingMessage: boolean;
+  /**
+   * is the message is editing
+   */
+  messageEditingIds: string[];
+  /**
+   * is the message is creating or updating in the service
+   */
+  messageLoadingIds: string[];
   /**
    * whether messages have fetched
    */
   messagesInit: boolean;
+  messagesMap: Record<string, ChatMessage[]>;
 }
 
 export const initialMessageState: ChatMessageState = {
   activeId: 'inbox',
-  inputMessage: '',
+  isCreatingMessage: false,
+  messageEditingIds: [],
   messageLoadingIds: [],
-  messages: [],
   messagesInit: false,
+  messagesMap: {},
 };

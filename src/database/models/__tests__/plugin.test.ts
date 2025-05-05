@@ -1,81 +1,167 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+// @vitest-environment node
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DB_Plugin } from '../../schemas/plugin';
+import { LobeChatDatabase } from '@/database/type';
+
+import { NewInstalledPlugin, userInstalledPlugins, users } from '../../schemas';
 import { PluginModel } from '../plugin';
+import { getTestDB } from './_util';
+
+const serverDB: LobeChatDatabase = await getTestDB();
+
+const userId = 'plugin-db';
+const pluginModel = new PluginModel(serverDB, userId);
+
+beforeEach(async () => {
+  await serverDB.transaction(async (trx) => {
+    await trx.delete(users);
+    await trx.insert(users).values([{ id: userId }, { id: '456' }]);
+  });
+});
+
+afterEach(async () => {
+  await serverDB.delete(users);
+});
 
 describe('PluginModel', () => {
-  let pluginData: DB_Plugin;
-
-  beforeEach(() => {
-    // 设置正确结构的插件数据
-    pluginData = {
-      identifier: 'test-plugin',
-      id: 'test-plugin',
-      manifest: {},
-      type: 'plugin',
-    };
-  });
-
-  afterEach(async () => {
-    // 每次测试后清理数据库
-    await PluginModel.clear();
-  });
-
-  describe('getList', () => {
-    it('should fetch and return the plugin list', async () => {
-      await PluginModel.create(pluginData);
-      const plugins = await PluginModel.getList();
-      expect(plugins).toHaveLength(1);
-      expect(plugins[0]).toEqual(pluginData);
-    });
-  });
-
   describe('create', () => {
-    it('should create a plugin record', async () => {
-      await PluginModel.create(pluginData);
-      const plugins = await PluginModel.getList();
-      expect(plugins).toHaveLength(1);
-      expect(plugins[0]).toEqual(pluginData);
-    });
-  });
+    it('should create a new installed plugin', async () => {
+      const params = {
+        type: 'plugin',
+        identifier: 'test-plugin',
+        manifest: { identifier: 'Test Plugin' },
+        customParams: { manifestUrl: 'abc123' },
+      } as NewInstalledPlugin;
 
-  describe('batchCreate', () => {
-    it('should batch create plugin records', async () => {
-      await PluginModel.batchCreate([pluginData, { ...pluginData, identifier: 'abc' }]);
-      const plugins = await PluginModel.getList();
-      expect(plugins).toHaveLength(2);
+      const result = await pluginModel.create(params);
+
+      expect(result.userId).toBe(userId);
+      expect(result.type).toBe(params.type);
+      expect(result.identifier).toBe(params.identifier);
+      expect(result.manifest).toEqual(params.manifest);
+      expect(result.customParams).toEqual(params.customParams);
     });
   });
 
   describe('delete', () => {
-    it('should delete a plugin', async () => {
-      await PluginModel.create(pluginData);
-      await PluginModel.delete(pluginData.identifier);
-      const plugins = await PluginModel.getList();
-      expect(plugins).toHaveLength(0);
+    it('should delete an installed plugin by identifier', async () => {
+      await serverDB.insert(userInstalledPlugins).values({
+        userId,
+        type: 'plugin',
+        identifier: 'test-plugin',
+        manifest: { name: 'Test Plugin' },
+      } as unknown as NewInstalledPlugin);
+
+      await pluginModel.delete('test-plugin');
+
+      const result = await serverDB.select().from(userInstalledPlugins);
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('deleteAll', () => {
+    it('should delete all installed plugins for the user', async () => {
+      await serverDB.insert(userInstalledPlugins).values([
+        {
+          userId,
+          type: 'plugin',
+          identifier: 'test-plugin-1',
+          manifest: { name: 'Test Plugin 1' },
+        },
+        {
+          userId,
+          type: 'plugin',
+          identifier: 'test-plugin-2',
+          manifest: { name: 'Test Plugin 2' },
+        },
+        {
+          userId: '456',
+          type: 'plugin',
+          identifier: 'test-plugin-3',
+          manifest: { name: 'Test Plugin 3' },
+        },
+      ] as unknown as NewInstalledPlugin[]);
+
+      await pluginModel.deleteAll();
+
+      const result = await serverDB.select().from(userInstalledPlugins);
+      expect(result).toHaveLength(1);
+      expect(result[0].userId).toBe('456');
+    });
+  });
+
+  describe('query', () => {
+    it('should query installed plugins for the user', async () => {
+      await serverDB.insert(userInstalledPlugins).values([
+        {
+          userId,
+          type: 'plugin',
+          identifier: 'test-plugin-1',
+          manifest: { name: 'Test Plugin 1' },
+          createdAt: new Date('2023-01-01'),
+        },
+        {
+          userId,
+          type: 'plugin',
+          identifier: 'test-plugin-2',
+          manifest: { name: 'Test Plugin 2' },
+          createdAt: new Date('2023-02-01'),
+        },
+        {
+          userId: '456',
+          type: 'plugin',
+          identifier: 'test-plugin-3',
+          manifest: { name: 'Test Plugin 3' },
+          createdAt: new Date('2023-03-01'),
+        },
+      ] as unknown as NewInstalledPlugin[]);
+
+      const result = await pluginModel.query();
+
+      expect(result).toHaveLength(2);
+      expect(result[0].identifier).toBe('test-plugin-2');
+      expect(result[1].identifier).toBe('test-plugin-1');
+    });
+  });
+
+  describe('findById', () => {
+    it('should find an installed plugin by identifier', async () => {
+      await serverDB.insert(userInstalledPlugins).values([
+        {
+          userId,
+          type: 'plugin',
+          identifier: 'test-plugin-1',
+          manifest: { name: 'Test Plugin 1' },
+        },
+        {
+          userId: '456',
+          type: 'plugin',
+          identifier: 'test-plugin-2',
+          manifest: { name: 'Test Plugin 2' },
+        },
+      ] as unknown as NewInstalledPlugin[]);
+
+      const result = await pluginModel.findById('test-plugin-1');
+
+      expect(result?.userId).toBe(userId);
+      expect(result?.identifier).toBe('test-plugin-1');
     });
   });
 
   describe('update', () => {
-    it('should update a plugin', async () => {
-      await PluginModel.create(pluginData);
-      const updatedPluginData: DB_Plugin = {
-        ...pluginData,
-        type: 'customPlugin',
-      };
-      await PluginModel.update(pluginData.identifier, updatedPluginData);
-      const plugins = await PluginModel.getList();
-      expect(plugins).toHaveLength(1);
-      expect(plugins[0]).toEqual({ ...updatedPluginData, updatedAt: expect.any(Number) });
-    });
-  });
+    it('should update an installed plugin', async () => {
+      await serverDB.insert(userInstalledPlugins).values({
+        userId,
+        type: 'plugin',
+        identifier: 'test-plugin',
+        manifest: {},
+        settings: { enabled: true },
+      } as unknown as NewInstalledPlugin);
 
-  describe('clear', () => {
-    it('should clear the table', async () => {
-      await PluginModel.create(pluginData);
-      await PluginModel.clear();
-      const plugins = await PluginModel.getList();
-      expect(plugins).toHaveLength(0);
+      await pluginModel.update('test-plugin', { settings: { enabled: false } });
+
+      const result = await pluginModel.findById('test-plugin');
+      expect(result?.settings).toEqual({ enabled: false });
     });
   });
 });

@@ -15,30 +15,31 @@ const mapWithBasePath = <T extends object>(apis: T): T => {
 };
 
 export const API_ENDPOINTS = mapWithBasePath({
-  config: '/api/config',
-  proxy: '/api/proxy',
   oauth: '/api/auth',
 
-  // agent markets
-  market: '/api/market',
-  marketItem: (identifier: string) => withBasePath(`/api/market/${identifier}`),
+  proxy: '/webapi/proxy',
 
   // plugins
-  gateway: '/api/plugin/gateway',
-  pluginStore: '/api/plugin/store',
-
-  // chat
-  chat: (provider: string) => withBasePath(`/api/chat/${provider}`),
+  gateway: '/webapi/plugin/gateway',
 
   // trace
-  trace: '/api/trace',
+  trace: '/webapi/trace',
+
+  // chat
+  chat: (provider: string) => withBasePath(`/webapi/chat/${provider}`),
+
+  // models
+  models: (provider: string) => withBasePath(`/webapi/models/${provider}`),
+  modelPull: (provider: string) => withBasePath(`/webapi/models/${provider}/pull`),
 
   // image
-  images: '/api/openai/images',
+  images: (provider: string) => `/webapi/text-to-image/${provider}`,
 
-  // TTS & STT
-  stt: '/api/openai/stt',
-  tts: '/api/openai/tts',
-  edge: '/api/tts/edge-speech',
-  microsoft: '/api/tts/microsoft-speech',
+  // STT
+  stt: '/webapi/stt/openai',
+
+  // TTS
+  tts: '/webapi/tts/openai',
+  edge: '/webapi/tts/edge',
+  microsoft: '/webapi/tts/microsoft',
 });

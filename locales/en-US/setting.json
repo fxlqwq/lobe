@@ -2,9 +2,18 @@
   "about": {
     "title": "About"
   },
+  "agentTab": {
+    "chat": "Chat Preferences",
+    "meta": "Assistant Info",
+    "modal": "Model Settings",
+    "opening": "Opening Settings",
+    "plugin": "Plugin Settings",
+    "prompt": "Role Configuration",
+    "tts": "Voice Service"
+  },
   "analytics": {
     "telemetry": {
-      "desc": "By opting to send telemetry data, you can help us improve the overall user experience of LobeChat",
+      "desc": "By opting to send telemetry data, you can help us improve the overall user experience of {{appName}}.",
       "title": "Send Anonymous Usage Data"
     },
     "title": "Analytics"
@@ -13,7 +22,7 @@
     "clear": {
       "action": "Clear Now",
       "confirm": "Confirm to clear all chat data?",
-      "desc": "This will clear all session data, including agent, files, messages, plugins, etc.",
+      "desc": "This will clear all session data, including assistant, files, messages, plugins, etc.",
       "success": "All session messages have been cleared",
       "title": "Clear All Session Messages"
     },
@@ -22,232 +31,102 @@
       "confirm": "Confirm to reset all settings?",
       "currentVersion": "Current Version",
       "desc": "Reset all settings to default values",
+      "success": "All settings have been reset",
       "title": "Reset All Settings"
     }
   },
   "header": {
+    "desc": "Preferences and model settings.",
     "global": "Global Settings",
     "session": "Session Settings",
-    "sessionWithName": "Session Settings · {{name}}"
+    "sessionDesc": "Role settings and session preferences.",
+    "sessionWithName": "Session Settings · {{name}}",
+    "title": "Settings"
+  },
+  "hotkey": {
+    "conflicts": "Conflicts with existing hotkeys",
+    "group": {
+      "conversation": "Conversation",
+      "essential": "Essential"
+    },
+    "invalidCombination": "The hotkey must include at least one modifier key (Ctrl, Alt, Shift) and one regular key",
+    "record": "Press a key to record the hotkey",
+    "reset": "Reset to default hotkeys",
+    "title": "Hotkeys"
   },
   "llm": {
-    "anthropic": {
-      "endpoint": {
-        "desc": "Must include http(s):// besides the default address",
-        "placeholder": "https://api.anthropic.com",
-        "title": "API Proxy Address"
-      },
-      "title": "Anthropic",
-      "token": {
-        "desc": "Enter the API Key from Anthropic",
-        "placeholder": "Anthropic API Key",
-        "title": "API Key"
-      }
-    },
-    "azure": {
-      "azureApiVersion": {
-        "desc": "Azure's API version, following the YYYY-MM-DD format, refer to [latest version](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions)",
-        "fetch": "Fetch List",
-        "title": "Azure API Version"
-      },
-      "deployments": {
-        "desc": "Use the syntax id=name to fill in your deployed models (if the deployment name and model name are the same, you can just write the model name), separate multiple models with commas (,)",
-        "title": "Azure Deployment Models List"
-      },
-      "endpoint": {
-        "desc": "This value can be found in the 'Keys and Endpoint' section when checking resources in the Azure portal",
-        "placeholder": "https://docs-test-001.openai.azure.com",
-        "title": "Azure API Address"
-      },
-      "models": {
-        "desc": "Supported models",
-        "title": "Model List"
-      },
-      "title": "Azure OpenAI",
-      "token": {
-        "desc": "This value can be found in the 'Keys and Endpoint' section when checking resources in the Azure portal. You can use KEY1 or KEY2",
-        "placeholder": "Azure API Key",
-        "title": "API Key"
-      }
-    },
-    "bedrock": {
-      "accessKeyId": {
-        "desc": "Enter your AWS Access Key Id",
-        "placeholder": "AWS Access Key Id",
-        "title": "AWS Access Key Id"
-      },
-      "checker": {
-        "desc": "Test if AccessKeyId / SecretAccessKey are filled in correctly"
-      },
-      "region": {
-        "desc": "Enter AWS Region",
-        "placeholder": "AWS Region",
-        "title": "AWS Region"
-      },
-      "secretAccessKey": {
-        "desc": "Enter your AWS Secret Access Key",
-        "placeholder": "AWS Secret Access Key",
-        "title": "AWS Secret Access Key"
-      },
-      "title": "Bedrock"
+    "aesGcm": "Your keys and proxy address will be encrypted using the <1>AES-GCM</1> encryption algorithm",
+    "apiKey": {
+      "desc": "Please enter your {{name}} API Key",
+      "placeholder": "{{name}} API Key",
+      "title": "API Key"
     },
     "checker": {
       "button": "Check",
-      "desc": "Test if the Api Key and proxy address are filled in correctly",
+      "desc": "Test if the API Key and proxy address are filled in correctly",
       "pass": "Check Passed",
       "title": "Connectivity Check"
     },
-    "google": {
-      "title": "Google",
-      "token": {
-        "desc": "Enter the API Key from Google",
-        "placeholder": "Google API Key",
-        "title": "API Key"
+    "customModelCards": {
+      "addNew": "Create and add {{id}} model",
+      "config": "Model Configuration",
+      "confirmDelete": "You are about to delete this custom model. Once deleted, it cannot be recovered. Please proceed with caution.",
+      "modelConfig": {
+        "azureDeployName": {
+          "extra": "The field actually requested in Azure OpenAI",
+          "placeholder": "Enter the model deployment name in Azure",
+          "title": "Model Deployment Name"
+        },
+        "displayName": {
+          "placeholder": "Enter the display name of the model, such as ChatGPT, GPT-4, etc.",
+          "title": "Model Display Name"
+        },
+        "files": {
+          "extra": "The current file upload implementation is merely a hack solution and is intended for personal experimentation only. Please wait for a complete file upload capability in future updates.",
+          "title": "Support File Upload"
+        },
+        "functionCall": {
+          "extra": "This configuration will only enable function calling capabilities within the application. Whether function calling is supported depends entirely on the model itself; please test the model's function calling capabilities on your own.",
+          "title": "Support Function Call"
+        },
+        "id": {
+          "extra": "Will be displayed as the model label",
+          "placeholder": "Enter the model ID, such as gpt-4-turbo-preview or claude-2.1",
+          "title": "Model ID"
+        },
+        "modalTitle": "Custom Model Configuration",
+        "tokens": {
+          "title": "Maximum Token Count"
+        },
+        "vision": {
+          "extra": "This configuration will only enable image upload capabilities within the application. Whether recognition is supported depends entirely on the model itself; please test the model's visual recognition capabilities on your own.",
+          "title": "Support Visual Recognition"
+        }
       }
     },
-    "groq": {
-      "title": "Groq",
-      "token": {
-        "desc": "Enter the API Key from Groq",
-        "placeholder": "Groq API Key",
-        "title": "API Key"
-      }
+    "fetchOnClient": {
+      "desc": "Client-side fetching mode initiates session requests directly from the browser, improving response speed.",
+      "title": "Use Client-Side Fetching Mode"
     },
-    "mistral": {
-      "title": "Mistral AI",
-      "token": {
-        "desc": "Enter the API Key from Mistral AI",
-        "placeholder": "Mistral AI API Key",
-        "title": "API Key"
-      }
+    "fetcher": {
+      "clear": "Clear fetched model",
+      "fetch": "Get Model List",
+      "fetching": "Fetching Model List...",
+      "latestTime": "Last Updated: {{time}}",
+      "noLatestTime": "No list available yet"
     },
-    "moonshot": {
-      "title": "The Dark Side of the Moon",
-      "token": {
-        "desc": "Enter the API Key from Moonshot AI",
-        "placeholder": "Moonshot AI API Key",
-        "title": "API Key"
-      }
+    "helpDoc": "Configuration Guide",
+    "modelList": {
+      "desc": "Select the models to display in the session. The selected models will be displayed in the model list.",
+      "placeholder": "Please select a model from the list",
+      "title": "Model List",
+      "total": "{{count}} models available in total"
     },
-    "ollama": {
-      "checker": {
-        "desc": "Test if the proxy address is correctly filled in"
-      },
-      "customModelName": {
-        "desc": "Add custom models, separate multiple models with commas (,)",
-        "placeholder": "vicuna,llava,codellama,llama2:13b-text",
-        "title": "Custom Model Name"
-      },
-      "endpoint": {
-        "desc": "Enter the Ollama interface proxy address, can be left blank if not specified locally",
-        "placeholder": "http://127.0.0.1:11434/v1",
-        "title": "Interface Proxy Address"
-      },
-      "title": "Ollama"
+    "proxyUrl": {
+      "desc": "Must include http(s):// in addition to the default address",
+      "title": "API Proxy Address"
     },
-    "openai": {
-      "azureApiVersion": {
-        "desc": "Azure's API version, following the YYYY-MM-DD format, refer to [latest version](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions)",
-        "fetch": "Fetch List",
-        "title": "Azure API Version"
-      },
-      "customModelName": {
-        "desc": "Add custom models, separate multiple models with commas (,)",
-        "placeholder": "model1,model2,model3",
-        "title": "Custom Model Name"
-      },
-      "endpoint": {
-        "desc": "Must include http(s):// except for the default address",
-        "placeholder": "https://api.openai.com/v1",
-        "title": "Interface Proxy Address"
-      },
-      "models": {
-        "count": "A total of {{count}} models supported",
-        "desc": "Supported models",
-        "fetch": "Fetch Model List",
-        "notSupport": "Azure OpenAI does not currently support viewing the model list",
-        "notSupportTip": "You need to ensure the deployment name matches the model name yourself",
-        "refetch": "Refetch Model List",
-        "title": "Model List"
-      },
-      "title": "OpenAI",
-      "token": {
-        "desc": "Use your own OpenAI Key",
-        "placeholder": "OpenAI API Key",
-        "title": "OpenAI API Key"
-      },
-      "useAzure": {
-        "desc": "Use the OpenAI service provided by Azure",
-        "fetch": "Fetch List",
-        "serverConfig": "Admin has enabled Azure OpenAI on the server side, switching is not allowed",
-        "title": "Azure OpenAI"
-      }
-    },
-    "openrouter": {
-      "checker": {
-        "desc": "Test if the proxy address is correctly filled in"
-      },
-      "customModelName": {
-        "desc": "Add custom models, separate multiple models with commas (,)",
-        "placeholder": "mistralai/mistral-7b-instruct:free,openchat/openchat-7b:free",
-        "title": "Custom Model Name"
-      },
-      "title": "OpenRouter",
-      "token": {
-        "desc": "Enter the API Key from OpenRouter AI",
-        "placeholder": "OpenRouter AI API Key",
-        "title": "API Key"
-      }
-    },
-    "perplexity": {
-      "title": "Perplexity",
-      "token": {
-        "desc": "Enter the API Key from Perplexity AI",
-        "placeholder": "Perplexity AI API Key",
-        "title": "API Key"
-      }
-    },
-    "togetherai": {
-      "checker": {
-        "desc": "Test if the proxy address is correctly filled in"
-      },
-      "customModelName": {
-        "desc": "Add custom models, separate multiple models with commas (,)",
-        "placeholder": "togethercomputer/Llama-2-7B-32K-Instruct,teknium/OpenHermes-2-Mistral-7B",
-        "title": "Custom Model Name"
-      },
-      "title": "TogetherAI",
-      "token": {
-        "desc": "Enter the API Key from TogetherAI AI",
-        "placeholder": "TogetherAI AI API Key",
-        "title": "API Key"
-      }
-    },
-    "waitingForMore": "More models are <1>planned to be added</1>, stay tuned ✨",
-    "zeroone": {
-      "title": "01.AI Everything",
-      "token": {
-        "desc": "Enter the API Key from 01.AI Everything",
-        "placeholder": "01.AI Everything API Key",
-        "title": "API Key"
-      }
-    },
-    "zhipu": {
-      "title": "Zhipu",
-      "token": {
-        "desc": "Enter the API Key from Zhipu",
-        "placeholder": "Zhipu API Key",
-        "title": "API Key"
-      }
-    }
-  },
-  "ollama": {
-    "download": {
-      "desc": "Ollama is currently downloading the model. Please try not to close this page. It will resume from where it left off if you restart the download.",
-      "remainingTime": "Remaining Time",
-      "speed": "Download Speed",
-      "title": "Downloading model {{model}}"
-    }
+    "waitingForMore": "More models are <1>planned to be added</1>, stay tuned"
   },
   "plugin": {
     "addTooltip": "Custom Plugin",
@@ -271,22 +150,25 @@
       "title": "Background Color"
     },
     "description": {
-      "placeholder": "Enter agent description",
-      "title": "Agent Description"
+      "desc": "A brief introduction to your assistant, not for character setting",
+      "placeholder": "Enter assistant description",
+      "title": "Assistant Description"
     },
     "name": {
-      "placeholder": "Enter agent name",
+      "placeholder": "Enter assistant name",
       "title": "Name"
     },
     "prompt": {
       "placeholder": "Enter role prompt word",
       "title": "Role Setting"
     },
+    "submit": "Update Assistant Information",
     "tag": {
+      "desc": "Assistant tags will be displayed in the assistant marketplace",
       "placeholder": "Enter tag",
       "title": "Tag"
     },
-    "title": "Agent Information"
+    "title": "Assistant Information"
   },
   "settingChat": {
     "autoCreateTopicThreshold": {
@@ -308,12 +190,13 @@
       "desc": "Whether to automatically create a topic during the conversation, only effective in temporary topics",
       "title": "Auto Create Topic"
     },
-    "enableCompressThreshold": {
-      "title": "Enable History Message Length Compression Threshold"
+    "enableCompressHistory": {
+      "title": "Enable Automatic Summary of Chat History"
     },
     "enableHistoryCount": {
       "alias": "Unlimited",
       "limited": "Include only {{number}} conversation messages",
+      "setlimited": "Set limited history messages",
       "title": "Limit History Message Count",
       "unlimited": "Unlimited history message count"
     },
@@ -326,44 +209,70 @@
       "placeholder": "Preprocessing template {{text}} will be replaced with real-time input information",
       "title": "User Input Preprocessing"
     },
+    "submit": "Update Chat Preferences",
     "title": "Chat Settings"
   },
   "settingModel": {
     "enableMaxTokens": {
       "title": "Enable Max Tokens Limit"
     },
+    "enableReasoningEffort": {
+      "title": "Enable Reasoning Effort Adjustment"
+    },
     "frequencyPenalty": {
-      "desc": "The higher the value, the more likely it is to reduce repeated words",
-      "title": "Frequency Penalty"
+      "desc": "The higher the value, the more diverse and rich the vocabulary; the lower the value, the simpler and more straightforward the language.",
+      "title": "Vocabulary Richness"
     },
     "maxTokens": {
       "desc": "The maximum number of tokens used for each interaction",
       "title": "Max Tokens Limit"
     },
     "model": {
-      "desc": "ChatGPT model",
-      "list": {
-        "gpt-3.5-turbo": "GPT 3.5",
-        "gpt-3.5-turbo-16k": "GPT 3.5 (16K)",
-        "gpt-4": "GPT 4",
-        "gpt-4-32k": "GPT 4 (32K)"
-      },
+      "desc": "{{provider}} model",
       "title": "Model"
     },
-    "presencePenalty": {
-      "desc": "The higher the value, the more likely it is to expand to new topics",
-      "title": "Topic Freshness"
+    "params": {
+      "title": "Advanced Parameters"
     },
+    "presencePenalty": {
+      "desc": "The higher the value, the more inclined to use different expressions and avoid concept repetition; the lower the value, the more inclined to use repeated concepts or narratives, resulting in more consistent expression.",
+      "title": "Expression Divergence"
+    },
+    "reasoningEffort": {
+      "desc": "The higher the value, the stronger the reasoning ability, but it may increase response time and token consumption.",
+      "options": {
+        "high": "High",
+        "low": "Low",
+        "medium": "Medium"
+      },
+      "title": "Reasoning Effort"
+    },
+    "submit": "Update Model Settings",
     "temperature": {
-      "desc": "The higher the value, the more random the response",
-      "title": "Randomness",
-      "titleWithValue": "Randomness {{value}}"
+      "desc": "The higher the value, the more creative and imaginative the responses; the lower the value, the more rigorous the responses.",
+      "title": "Creativity Level",
+      "warning": "If the creativity level is set too high, the output may become garbled."
     },
     "title": "Model Settings",
     "topP": {
-      "desc": "Similar to randomness, but do not change together with randomness",
-      "title": "Top P Sampling"
+      "desc": "How many possibilities to consider; a higher value accepts more potential answers, while a lower value tends to choose the most likely answer. It is not recommended to change this alongside the creativity level.",
+      "title": "Openness to Ideas"
     }
+  },
+  "settingOpening": {
+    "openingMessage": {
+      "desc": "The opening message displayed when the conversation starts, used to introduce the assistant's features",
+      "placeholder": "Hello, I am your Custom Assistant. You can start chatting with me right away, or go to Assistant Settings to complete my information.",
+      "title": "Opening Message"
+    },
+    "openingQuestions": {
+      "desc": "Guiding questions displayed at the beginning of the conversation",
+      "empty": "No questions available",
+      "placeholder": "Please enter a question",
+      "repeat": "Question already exists",
+      "title": "Opening Questions"
+    },
+    "title": "Opening Settings"
   },
   "settingPlugin": {
     "title": "Plugin List"
@@ -395,6 +304,7 @@
   "settingTTS": {
     "openai": {
       "sttModel": "OpenAI Speech-to-Text Model",
+      "title": "OpenAI",
       "ttsModel": "OpenAI Text-to-Speech Model"
     },
     "showAllLocaleVoice": {
@@ -414,6 +324,7 @@
       "desc": "Where 'browser' is the native speech recognition service of the browser",
       "title": "Speech Recognition Service"
     },
+    "submit": "Update Voice Service",
     "title": "Speech Service",
     "tts": "Text-to-Speech Settings",
     "ttsService": {
@@ -421,7 +332,7 @@
       "title": "Text-to-Speech Service"
     },
     "voice": {
-      "desc": "Select a voice for the current agent, different TTS services support different voices",
+      "desc": "Select a voice for the current assistant, different TTS services support different voices",
       "preview": "Voice Preview",
       "title": "Text-to-Speech Voice"
     }
@@ -457,12 +368,45 @@
     },
     "title": "Theme Settings"
   },
+  "storage": {
+    "actions": {
+      "export": {
+        "button": "Export",
+        "exportType": {
+          "agent": "Export Assistant Settings",
+          "agentWithMessage": "Export Assistant and Messages",
+          "all": "Export Global Settings and All Assistant Data",
+          "allAgent": "Export All Assistant Settings",
+          "allAgentWithMessage": "Export All Assistants and Messages",
+          "globalSetting": "Export Global Settings"
+        },
+        "title": "Export Data"
+      },
+      "import": {
+        "button": "Import",
+        "title": "Import Data"
+      },
+      "title": "Advanced Operations"
+    },
+    "desc": "Current storage usage in the browser",
+    "embeddings": {
+      "used": "Vector Storage"
+    },
+    "title": "Data Storage",
+    "used": "Storage Usage"
+  },
   "submitAgentModal": {
-    "button": "Submit Agent",
-    "identifier": "Agent Identifier",
-    "metaMiss": "Please complete the agent information before submitting. It should include name, description, and tags",
-    "placeholder": "Enter a unique identifier for the agent, e.g. web-development",
-    "tooltips": "Share to the agent marketplace"
+    "button": "Submit Assistant",
+    "identifier": "Assistant Identifier",
+    "metaMiss": "Please complete the assistant information before submitting. It should include name, description, and tags",
+    "placeholder": "Enter a unique identifier for the assistant, e.g. web-development",
+    "tooltips": "Share to the assistant marketplace"
+  },
+  "submitFooter": {
+    "reset": "Reset",
+    "submit": "Save",
+    "unSaved": "Unsaved Changes",
+    "unSavedWarning": "There are currently unsaved changes"
   },
   "sync": {
     "device": {
@@ -476,7 +420,7 @@
       "unknownOS": "Unknown OS"
     },
     "warning": {
-      "message": "This feature is currently experimental and may have unexpected or unstable behavior. If you encounter any issues, please submit feedback promptly."
+      "tip": "After a long period of community testing, WebRTC synchronization may not reliably meet general data synchronization needs. Please <1>deploy a signaling server</1> before use."
     },
     "webrtc": {
       "channelName": {
@@ -492,19 +436,68 @@
       },
       "desc": "Real-time, peer-to-peer data communication requires all devices to be online for synchronization.",
       "enabled": {
-        "invalid": "Please enter a sync channel name before enabling",
+        "invalid": "Please fill in the signaling server and synchronization channel name before enabling.",
         "title": "Enable Sync"
+      },
+      "signaling": {
+        "desc": "WebRTC will use this address for synchronization",
+        "placeholder": "Enter signaling server address",
+        "title": "Signaling Server"
       },
       "title": "WebRTC Sync"
     }
   },
+  "systemAgent": {
+    "agentMeta": {
+      "label": "Assistant Metadata Generation Model",
+      "modelDesc": "Model designated for generating assistant name, description, avatar, and tags",
+      "title": "Automatically Generate Assistant Information"
+    },
+    "customPrompt": {
+      "addPrompt": "Add Custom Prompt",
+      "desc": "Once filled out, the system assistant will use the custom prompt when generating content",
+      "placeholder": "Please enter custom prompt",
+      "title": "Custom Prompt"
+    },
+    "helpInfo": "When creating a new assistant, the default assistant settings will be used as preset values.",
+    "historyCompress": {
+      "label": "Conversation History Model",
+      "modelDesc": "Specify the model used to compress conversation history",
+      "title": "Automatically Summarize Conversation History"
+    },
+    "queryRewrite": {
+      "label": "Question Rewriting Model",
+      "modelDesc": "Specify the model used to optimize user inquiries",
+      "title": "Knowledge Base Question Rewrite"
+    },
+    "thread": {
+      "label": "Subtopic Naming Model",
+      "modelDesc": "The model designated for automatic renaming of subtopics",
+      "title": "Automatic Subtopic Naming"
+    },
+    "title": "System Assistants",
+    "topic": {
+      "label": "Topic Naming Model",
+      "modelDesc": "Model designated for automatic topic renaming",
+      "title": "Automatic Topic Naming"
+    },
+    "translation": {
+      "label": "Translation Assistant",
+      "modelDesc": "Specific model for translate message",
+      "title": "Translation Settings"
+    }
+  },
   "tab": {
     "about": "About",
-    "agent": "Default Agent",
+    "agent": "Default Assistant",
     "common": "Common Settings",
     "experiment": "Experiment",
+    "hotkey": "Hotkeys",
     "llm": "Language Model",
+    "provider": "AI Service Provider",
+    "storage": "Data Storage",
     "sync": "Cloud Sync",
+    "system-agent": "System Assistant",
     "tts": "Text-to-Speech"
   },
   "tools": {

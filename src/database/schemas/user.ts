@@ -1,58 +1,73 @@
-import { z } from 'zod';
+/* eslint-disable sort-keys-fix/sort-keys-fix  */
+import { LobeChatPluginManifest } from '@lobehub/chat-plugin-sdk';
+import { boolean, jsonb, pgTable, primaryKey, text } from 'drizzle-orm/pg-core';
 
-import { AgentSchema } from '@/database/schemas/session';
-import { LobeMetaDataSchema } from '@/types/meta';
+import { DEFAULT_PREFERENCE } from '@/const/user';
+import { CustomPluginParams } from '@/types/tool/plugin';
 
-const modelProviderSchema = z.object({
-  openai: z.object({
-    OPENAI_API_KEY: z.string().optional(),
-    azureApiVersion: z.string().optional(),
-    customModelName: z.string().optional(),
-    endpoint: z.string().optional(),
-    models: z.array(z.string()).optional(),
-    useAzure: z.boolean().optional(),
-  }),
-  // zhipu: z.object({
-  //   ZHIPU_API_KEY: z.string().optional(),
-  //   enabled: z.boolean().default(false),
-  // }),
+import { timestamps, timestamptz } from './_helpers';
+
+export const users = pgTable('users', {
+  id: text('id').primaryKey().notNull(),
+  username: text('username').unique(),
+  email: text('email'),
+
+  avatar: text('avatar'),
+  phone: text('phone'),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  fullName: text('full_name'),
+
+  isOnboarded: boolean('is_onboarded').default(false),
+  // Time user was created in Clerk
+  clerkCreatedAt: timestamptz('clerk_created_at'),
+
+  // Required by nextauth, all null allowed
+  emailVerifiedAt: timestamptz('email_verified_at'),
+
+  preference: jsonb('preference').$defaultFn(() => DEFAULT_PREFERENCE),
+
+  ...timestamps,
 });
 
-const settingsSchema = z.object({
-  defaultAgent: z.object({
-    config: AgentSchema,
-    meta: LobeMetaDataSchema,
-  }),
-  fontSize: z.number().default(14),
-  language: z.string(),
-  languageModel: modelProviderSchema.partial(),
-  password: z.string(),
-  themeMode: z.string(),
-  tts: z.object({
-    openAI: z.object({
-      sttModel: z.string(),
-      ttsModel: z.string(),
-    }),
-    sttAutoStop: z.boolean(),
-    sttServer: z.string(),
-  }),
+export type NewUser = typeof users.$inferInsert;
+export type UserItem = typeof users.$inferSelect;
+
+export const userSettings = pgTable('user_settings', {
+  id: text('id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .primaryKey(),
+
+  tts: jsonb('tts'),
+  hotkey: jsonb('hotkey'),
+  keyVaults: text('key_vaults'),
+  general: jsonb('general'),
+  languageModel: jsonb('language_model'),
+  systemAgent: jsonb('system_agent'),
+  defaultAgent: jsonb('default_agent'),
+  tool: jsonb('tool'),
 });
+export type UserSettingsItem = typeof userSettings.$inferSelect;
 
-// const patchSchema = z.array(
-//   z.object({
-//     op: z.string(),
-//     path: z.string(),
-//     value: z.any(),
-//   }),
-// );
+export const userInstalledPlugins = pgTable(
+  'user_installed_plugins',
+  {
+    userId: text('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
 
-export const DB_UserSchema = z.object({
-  avatar: z.string().optional(),
-  settings: settingsSchema.partial(),
-  uuid: z.string(),
-  // settings: patchSchema,
-});
+    identifier: text('identifier').notNull(),
+    type: text('type', { enum: ['plugin', 'customPlugin'] }).notNull(),
+    manifest: jsonb('manifest').$type<LobeChatPluginManifest>(),
+    settings: jsonb('settings'),
+    customParams: jsonb('custom_params').$type<CustomPluginParams>(),
 
-export type DB_User = z.infer<typeof DB_UserSchema>;
+    ...timestamps,
+  },
+  (self) => ({
+    id: primaryKey({ columns: [self.userId, self.identifier] }),
+  }),
+);
 
-export type DB_Settings = z.infer<typeof settingsSchema>;
+export type NewInstalledPlugin = typeof userInstalledPlugins.$inferInsert;
+export type InstalledPluginItem = typeof userInstalledPlugins.$inferSelect;

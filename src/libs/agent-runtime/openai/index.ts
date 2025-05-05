@@ -1,108 +1,80 @@
-import { OpenAIStream, StreamingTextResponse } from 'ai';
-import OpenAI, { ClientOptions } from 'openai';
-import urlJoin from 'url-join';
+import type { ChatModelCard } from '@/types/llm';
 
-import { ChatStreamPayload } from '@/types/openai/chat';
+import { ModelProvider } from '../types';
+import { LobeOpenAICompatibleFactory } from '../utils/openaiCompatibleFactory';
+import { pruneReasoningPayload } from '../utils/openaiHelpers';
 
-import { LobeRuntimeAI } from '../BaseAI';
-import { AgentRuntimeErrorType } from '../error';
-import { ChatCompetitionOptions, ModelProvider } from '../types';
-import { AgentRuntimeError } from '../utils/createError';
-import { debugStream } from '../utils/debugStream';
-import { desensitizeUrl } from '../utils/desensitizeUrl';
-import { handleOpenAIError } from '../utils/handleOpenAIError';
-
-const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
-
-interface LobeOpenAIOptions extends ClientOptions {
-  azureOptions?: {
-    apiVersion?: string;
-    model?: string;
-  };
-  useAzure?: boolean;
+export interface OpenAIModelCard {
+  id: string;
 }
 
-export class LobeOpenAI implements LobeRuntimeAI {
-  private client: OpenAI;
+export const LobeOpenAI = LobeOpenAICompatibleFactory({
+  baseURL: 'https://api.openai.com/v1',
+  chatCompletion: {
+    handlePayload: (payload) => {
+      const { model } = payload;
 
-  constructor(options: LobeOpenAIOptions) {
-    if (!options.apiKey) throw AgentRuntimeError.createError(AgentRuntimeErrorType.NoOpenAIAPIKey);
-
-    if (options.useAzure) {
-      this.client = LobeOpenAI.initWithAzureOpenAI(options);
-    } else {
-      this.client = new OpenAI(options);
-    }
-
-    this.baseURL = this.client.baseURL;
-  }
-
-  baseURL: string;
-
-  async chat(payload: ChatStreamPayload, options?: ChatCompetitionOptions) {
-    // ============  1. preprocess messages   ============ //
-    const { messages, ...params } = payload;
-
-    // ============  2. send api   ============ //
-
-    try {
-      const response = await this.client.chat.completions.create(
-        {
-          messages,
-          ...params,
-          stream: true,
-        } as unknown as OpenAI.ChatCompletionCreateParamsStreaming,
-        { headers: { Accept: '*/*' } },
-      );
-
-      const [prod, debug] = response.tee();
-
-      if (process.env.DEBUG_OPENAI_CHAT_COMPLETION === '1') {
-        debugStream(debug.toReadableStream()).catch(console.error);
+      if (model.startsWith('o1') || model.startsWith('o3')) {
+        return pruneReasoningPayload(payload) as any;
       }
 
-      return new StreamingTextResponse(OpenAIStream(prod, options?.callback), {
-        headers: options?.headers,
-      });
-    } catch (error) {
-      const { errorResult, RuntimeError } = handleOpenAIError(error);
-
-      const errorType = RuntimeError || AgentRuntimeErrorType.OpenAIBizError;
-
-      let desensitizedEndpoint = this.baseURL;
-
-      // refs: https://github.com/lobehub/lobe-chat/issues/842
-      if (this.baseURL !== DEFAULT_BASE_URL) {
-        desensitizedEndpoint = desensitizeUrl(this.baseURL);
+      if (model.includes('-search-')) {
+        return {
+          ...payload,
+          frequency_penalty: undefined,
+          presence_penalty: undefined,
+          stream: payload.stream ?? true,
+          temperature: undefined,
+          top_p: undefined,
+        };
       }
 
-      throw AgentRuntimeError.chat({
-        endpoint: desensitizedEndpoint,
-        error: errorResult,
-        errorType,
-        provider: ModelProvider.OpenAI,
-      });
-    }
-  }
+      return { ...payload, stream: payload.stream ?? true };
+    },
+  },
+  debug: {
+    chatCompletion: () => process.env.DEBUG_OPENAI_CHAT_COMPLETION === '1',
+  },
+  models: async ({ client }) => {
+    const { LOBE_DEFAULT_MODEL_LIST } = await import('@/config/aiModels');
 
-  static initWithAzureOpenAI(options: LobeOpenAIOptions) {
-    const endpoint = options.baseURL!;
-    const model = options.azureOptions?.model || '';
+    const functionCallKeywords = ['gpt-4', 'gpt-3.5', 'o3-mini'];
 
-    // refs: https://test-001.openai.azure.com/openai/deployments/gpt-35-turbo
-    const baseURL = urlJoin(endpoint, `/openai/deployments/${model.replace('.', '')}`);
+    const visionKeywords = ['gpt-4o', 'vision'];
 
-    const apiVersion = options.azureOptions?.apiVersion || '2023-08-01-preview';
-    const apiKey = options.apiKey!;
+    const reasoningKeywords = ['o1', 'o3'];
 
-    const config: ClientOptions = {
-      ...options,
-      apiKey,
-      baseURL,
-      defaultHeaders: { 'api-key': apiKey },
-      defaultQuery: { 'api-version': apiVersion },
-    };
+    const modelsPage = (await client.models.list()) as any;
+    const modelList: OpenAIModelCard[] = modelsPage.data;
 
-    return new OpenAI(config);
-  }
-}
+    return modelList
+      .map((model) => {
+        const knownModel = LOBE_DEFAULT_MODEL_LIST.find(
+          (m) => model.id.toLowerCase() === m.id.toLowerCase(),
+        );
+
+        return {
+          contextWindowTokens: knownModel?.contextWindowTokens ?? undefined,
+          displayName: knownModel?.displayName ?? undefined,
+          enabled: knownModel?.enabled || false,
+          functionCall:
+            (functionCallKeywords.some((keyword) => model.id.toLowerCase().includes(keyword)) &&
+              !model.id.toLowerCase().includes('audio')) ||
+            knownModel?.abilities?.functionCall ||
+            false,
+          id: model.id,
+          reasoning:
+            reasoningKeywords.some((keyword) => model.id.toLowerCase().includes(keyword)) ||
+            knownModel?.abilities?.reasoning ||
+            false,
+          vision:
+            (visionKeywords.some((keyword) => model.id.toLowerCase().includes(keyword)) &&
+              !model.id.toLowerCase().includes('audio')) ||
+            knownModel?.abilities?.vision ||
+            false,
+        };
+      })
+      .filter(Boolean) as ChatModelCard[];
+  },
+  provider: ModelProvider.OpenAI,
+});

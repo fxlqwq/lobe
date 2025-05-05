@@ -1,58 +1,79 @@
-import { z } from 'zod';
+/* eslint-disable sort-keys-fix/sort-keys-fix  */
+import { boolean, integer, pgTable, text, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
+import { createInsertSchema } from 'drizzle-zod';
 
-import { LobeMetaDataSchema } from '@/types/meta';
+import { idGenerator, randomSlug } from '@/database/utils/idGenerator';
 
-const fewShotsSchema = z.array(
-  z.object({
-    content: z.string(),
-    role: z.string(),
+import { timestamps } from './_helpers';
+import { users } from './user';
+
+//  ======= sessionGroups ======= //
+
+export const sessionGroups = pgTable(
+  'session_groups',
+  {
+    id: text('id')
+      .$defaultFn(() => idGenerator('sessionGroups'))
+      .primaryKey(),
+    name: text('name').notNull(),
+    sort: integer('sort'),
+
+    userId: text('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+
+    clientId: text('client_id'),
+    ...timestamps,
+  },
+  (table) => ({
+    clientIdUnique: uniqueIndex('session_groups_client_id_user_id_unique').on(
+      table.clientId,
+      table.userId,
+    ),
   }),
 );
 
-const ttsSchema = z.object({
-  showAllLocaleVoice: z.boolean().optional(),
-  sttLocale: z.string().default('auto'),
-  ttsService: z.string().default('openai'),
-  voice: z
-    .object({
-      edge: z.string().optional(),
-      microsoft: z.string().optional(),
-      openai: z.string().default(''),
-    })
-    .optional(),
-});
+export const insertSessionGroupSchema = createInsertSchema(sessionGroups);
 
-export const AgentSchema = z.object({
-  autoCreateTopicThreshold: z.number().default(2),
-  compressThreshold: z.number().optional(),
-  displayMode: z.enum(['chat', 'docs']).optional(),
-  enableAutoCreateTopic: z.boolean().default(true),
-  enableCompressThreshold: z.boolean().optional(),
-  enableHistoryCount: z.boolean().optional(),
-  enableMaxTokens: z.boolean().optional(),
-  fewShots: fewShotsSchema.optional(),
-  historyCount: z.number().default(8).optional(),
-  inputTemplate: z.string().optional(),
-  model: z.string().default('gpt-3.5-turbo'),
-  params: z.object({
-    frequency_penalty: z.number().default(0).optional(),
-    max_tokens: z.number().optional(),
-    presence_penalty: z.number().default(0).optional(),
-    temperature: z.number().default(0.6).optional(),
-    top_p: z.number().default(1).optional(),
+export type NewSessionGroup = typeof sessionGroups.$inferInsert;
+export type SessionGroupItem = typeof sessionGroups.$inferSelect;
+
+//  ======= sessions ======= //
+
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: text('id')
+      .$defaultFn(() => idGenerator('sessions'))
+      .primaryKey(),
+    slug: varchar('slug', { length: 100 })
+      .notNull()
+      .$defaultFn(() => randomSlug()),
+    title: text('title'),
+    description: text('description'),
+    avatar: text('avatar'),
+    backgroundColor: text('background_color'),
+
+    type: text('type', { enum: ['agent', 'group'] }).default('agent'),
+
+    userId: text('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    groupId: text('group_id').references(() => sessionGroups.id, { onDelete: 'set null' }),
+    clientId: text('client_id'),
+    pinned: boolean('pinned').default(false),
+
+    ...timestamps,
+  },
+  (t) => ({
+    slugUserIdUnique: uniqueIndex('slug_user_id_unique').on(t.slug, t.userId),
+
+    clientIdUnique: uniqueIndex('sessions_client_id_user_id_unique').on(t.clientId, t.userId),
   }),
-  plugins: z.array(z.string()).optional(),
-  provider: z.string().default('openai').optional(),
-  systemRole: z.string().default(''),
-  tts: ttsSchema.optional(),
-});
+);
 
-export const DB_SessionSchema = z.object({
-  config: AgentSchema,
-  group: z.string().default('default'),
-  meta: LobeMetaDataSchema,
-  pinned: z.number().int().min(0).max(1).optional(),
-  type: z.enum(['agent', 'group']).default('agent'),
-});
+export const insertSessionSchema = createInsertSchema(sessions);
+// export const selectSessionSchema = createSelectSchema(sessions);
 
-export type DB_Session = z.infer<typeof DB_SessionSchema>;
+export type NewSession = typeof sessions.$inferInsert;
+export type SessionItem = typeof sessions.$inferSelect;

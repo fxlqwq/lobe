@@ -1,4 +1,41 @@
 export default {
+  clerkAuth: {
+    loginSuccess: {
+      action: '继续会话',
+      desc: '{{greeting}}，很高兴能够继续为你服务。让我们接着刚刚的话题聊下去吧',
+      title: '欢迎回来， {{nickName}}',
+    },
+  },
+  error: {
+    backHome: '返回首页',
+    desc: '待会来试试，或者回到已知的世界',
+    retry: '重新加载',
+    title: '页面遇到一点问题..',
+  },
+  fetchError: {
+    detail: '错误详情',
+    title: '请求失败',
+  },
+  import: {
+    importConfigFile: {
+      description: '出错原因: {{reason}}',
+      title: '导入失败',
+    },
+    incompatible: {
+      description: '该文件由更高版本导出，请尝试升级到最新版本后再重新导入',
+      title: '当前应用不支持导入该文件',
+    },
+  },
+  loginRequired: {
+    desc: '即将自动跳转到登录页面',
+    title: '请登录后使用该功能',
+  },
+  notFound: {
+    backHome: '返回首页',
+    check: '请检查你的 URL 是否正确',
+    desc: '我们找不到你寻找的页面',
+    title: '进入了未知领域？',
+  },
   pluginSettings: {
     desc: '完成以下配置，即可开始使用该插件',
     title: '{{name}} 插件配置',
@@ -29,10 +66,20 @@ export default {
     429: '很抱歉，您的请求太多，服务器有点累了，请稍后再试',
     431: '很抱歉，您的请求头字段太大，服务器无法处理',
     451: '很抱歉，由于法律原因，服务器拒绝提供此资源',
+    499: '很抱歉，您的请求在服务器处理中被意外中断，可能是因为您主动取消了操作或网络连接不稳定。请检查网络状况后重试。',
     500: '很抱歉，服务器似乎遇到了一些困难，暂时无法完成您的请求，请稍后再试',
+    501: '很抱歉，服务器还不知道如何处理这个请求，请确认您的操作是否正确',
     502: '很抱歉，服务器似乎迷失了方向，暂时无法提供服务，请稍后再试',
     503: '很抱歉，服务器当前无法处理您的请求，可能是由于过载或正在进行维护，请稍后再试',
     504: '很抱歉，服务器没有等到上游服务器的回应，请稍后再试',
+    505: '很抱歉，服务器不支持您使用的HTTP版本，请更新后再试',
+    506: '很抱歉，服务器配置出现问题，请联系管理员解决',
+    507: '很抱歉，服务器存储空间不足，无法处理您的请求，请稍后再试',
+    509: '很抱歉，服务器的带宽已用尽，请稍后再试',
+    510: '很抱歉，服务器不支持请求的扩展功能，请联系管理员',
+    520: '很抱歉，服务器遇到了一个意外的问题，导致无法完成您的请求。请稍后再试，我们正努力解决这个问题。',
+    522: '很抱歉，服务器连接超时，未能及时响应您的请求。可能是网络不稳定或服务器暂时无法访问。请稍后再试，我们正在努力恢复服务。',
+    524: '很抱歉，服务器在等回复时超时了，可能是因为响应太慢，请稍后再试',
 
     /* eslint-disable sort-keys-fix/sort-keys-fix */
     PluginMarketIndexNotFound: '很抱歉，服务器没有找到插件索引，请检查索引地址是否正确',
@@ -51,54 +98,54 @@ export default {
     PluginGatewayError: '很抱歉，插件网关出现错误，请检查插件网关配置是否正确',
     PluginOpenApiInitError: '很抱歉，OpenAPI 客户端初始化失败，请检查 OpenAPI 的配置信息是否正确',
 
+    PluginFailToTransformArguments:
+      '很抱歉，插件调用参数解析失败，请尝试重新生成助手消息，或更换 Tools Calling 能力更强的 AI 模型后重试',
+
     InvalidAccessCode: '密码不正确或为空，请输入正确的访问密码，或者添加自定义 API Key',
+    InvalidClerkUser: '很抱歉，你当前尚未登录，请先登录或注册账号后继续操作',
+    SystemTimeNotMatchError: '很抱歉，您的系统时间和服务器不匹配，请检查您的系统时间后重试',
+    SubscriptionKeyMismatch:
+      '很抱歉，由于系统偶发故障，当前订阅用量暂时失效，请点击下方按钮恢复订阅，或邮件联系我们获取支持',
+    CreateMessageError:
+      '很抱歉，消息未能正常发送，请复制内容后重新发送，刷新页面后此消息将不会保留',
     LocationNotSupportError:
-      '很抱歉，你的所在位置不支持此模型服务，可能是由于地区限制或服务未开通。请确认当前位置是否支持使用此服务，或尝试使用其他位置信息。',
+      '很抱歉，你的所在地区不支持此模型服务，可能是由于区域限制或服务未开通。请确认当前地区是否支持使用此服务，或尝试使用切换到其他地区后重试。',
+    InsufficientQuota:
+      '很抱歉，该密钥的配额(quota)已达上限，请检查账户余额是否充足，或增大密钥配额后再试',
+    ModelNotFound:
+      '很抱歉，无法请求到相应的模型，可能是模型不存在或者没有访问权限导致，请更换 API Key 或调整访问权限后重试',
+    ExceededContextWindow: '当前请求内容超出模型可处理的长度，请减少内容量后重试',
+    QuotaLimitReached:
+      '很抱歉，当前 Token 用量或请求次数已达该密钥的配额(quota)上限，请增加该密钥的配额或稍后再试',
+    PermissionDenied: '很抱歉，你没有权限访问该服务，请检查你的密钥是否有访问权限',
+    InvalidProviderAPIKey: '{{provider}} API Key 不正确或为空，请检查 {{provider}} API Key 后重试',
+    ProviderBizError: '请求 {{provider}} 服务出错，请根据以下信息排查或重试',
+    /**
+     * @deprecated
+     */
+    NoOpenAIAPIKey: 'OpenAI API Key 不正确或为空，请添加自定义 OpenAI API Key',
 
-    OpenAIBizError: '请求 OpenAI 服务出错，请根据以下信息排查或重试',
-    NoOpenAIAPIKey: 'OpenAI API Key 为空，请添加自定义 OpenAI API Key',
-
-    ZhipuBizError: '请求智谱服务出错，请根据以下信息排查或重试',
-    InvalidZhipuAPIKey: 'Zhipu API Key 不正确或为空，请检查 Zhipu API Key 后重试',
-
-    MistralBizError: '请求 Mistral AI 服务出错，请根据以下信息排查或重试',
-    InvalidMistralAPIKey: 'Mistral AI API Key 不正确或为空，请检查 Mistral API Key 后重试',
-
-    MoonshotBizError: '请求月之暗面服务出错，请根据以下信息排查或重试',
-    InvalidMoonshotAPIKey: 'Moonshot AI API Key 不正确或为空，请检查 Moonshot API Key 后重试',
-
-    GoogleBizError: '请求 Google 服务出错，请根据以下信息排查或重试',
-    InvalidGoogleAPIKey: 'Google API Key 不正确或为空，请检查 Google API Key 后重试',
-
+    InvalidVertexCredentials: 'Vertex 鉴权未通过，请检查鉴权凭证后重试',
     InvalidBedrockCredentials: 'Bedrock 鉴权未通过，请检查 AccessKeyId/SecretAccessKey 后重试',
-    BedrockBizError: '请求 Bedrock 服务出错，请根据以下信息排查或重试',
-
-    InvalidAzureAPIKey: 'Azure API Key 不正确或为空，请检查 Azure API Key 后重试',
-    AzureBizError: '请求 Azure AI 服务出错，请根据以下信息排查或重试',
-
-    InvalidPerplexityAPIKey: 'Perplexity API Key 不正确或为空，请检查 Perplexity API Key 后重试',
-    PerplexityBizError: '请求 Perplexity AI 服务出错，请根据以下信息排查或重试',
-
-    InvalidAnthropicAPIKey: 'Anthropic API Key 不正确或为空，请检查 Anthropic API Key 后重试',
-    AnthropicBizError: '请求 Anthropic AI 服务出错，请根据以下信息排查或重试',
-
-    InvalidGroqAPIKey: 'Groq API Key 不正确或为空，请检查 Groq API Key 后重试',
-    GroqBizError: '请求 Groq 服务出错，请根据以下信息排查或重试',
-
-    InvalidOpenRouterAPIKey: 'OpenRouter API Key 不正确或为空，请检查 OpenRouter API Key 后重试',
-    OpenRouterBizError: '请求 OpenRouter AI 服务出错，请根据以下信息排查或重试',
-
-    InvalidTogetherAIAPIKey: 'TogetherAI API Key 不正确或为空，请检查 TogetherAI API Key 后重试',
-    TogetherAIBizError: '请求 TogetherAI AI 服务出错，请根据以下信息排查或重试',
-
-    ZeroOneBizError: '请求零一万物服务出错，请根据以下信息排查或重试',
-    InvalidZeroOneAPIKey: '零一万物 API Key 不正确或为空，请检查零一万物 API Key 后重试',
-
+    StreamChunkError:
+      '流式请求的消息块解析错误，请检查当前 API 接口是否符合标准规范，或联系你的 API 供应商咨询',
+    UnknownChatFetchError: '很抱歉，遇到未知请求错误，请根据以下信息排查或重试',
     InvalidOllamaArgs: 'Ollama 配置不正确，请检查 Ollama 配置后重试',
     OllamaBizError: '请求 Ollama 服务出错，请根据以下信息排查或重试',
-    OllamaServiceUnavailable: '未检测到 Ollama 服务，请检查是否正常启动',
+    OllamaServiceUnavailable:
+      'Ollama 服务连接失败，请检查 Ollama 是否运行正常，或是否正确设置 Ollama 的跨域配置',
 
-    AgentRuntimeError: 'Lobe 语言模型运行时执行出错，请根据以下信息排查或重试',
+    AgentRuntimeError: 'Lobe AI Runtime 执行出错，请根据以下信息排查或重试',
+
+    // cloud
+    FreePlanLimit: '当前为免费用户，无法使用该功能，请升级到付费计划后继续使用',
+    SubscriptionPlanLimit:
+      '您的订阅积分已用尽，无法使用该功能，请升级到更高计划，或配置自定义模型 API 后继续使用',
+
+    // Github Token
+    InvalidGithubToken: 'Github PAT 不正确或为空，请检查 Github PAT 后重试',
+    ConnectionCheckFailed: '请求返回为空，请检查 API 代理地址末尾是否未包含 `/v1`',
+
     /* eslint-enable */
   },
   stt: {
@@ -108,68 +155,13 @@ export default {
     responseError: '服务请求失败，请检查配置或重试',
   },
   unlock: {
-    apikey: {
-      Anthropic: {
-        description: '输入你的 Anthropic API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 Anthropic API Key',
-      },
-      Bedrock: {
-        customRegion: '自定义服务区域',
-        description:
-          '输入你的 AWS AccessKeyId / SecretAccessKey 即可开始会话。应用不会记录你的鉴权配置',
-        title: '使用自定义 Bedrock 鉴权信息',
-      },
-      Google: {
-        description: '输入你的 Google API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 Google API Key',
-      },
-      Groq: {
-        description: '输入你的 Groq API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 Groq API Key',
-      },
-      Mistral: {
-        description: '输入你的 Mistral AI API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 Mistral AI API Key',
-      },
-      Moonshot: {
-        description: '输入你的 Moonshot AI API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 Moonshot AI API Key',
-      },
-      OpenAI: {
-        addProxyUrl: '添加 OpenAI 代理地址（可选）',
-        description: '输入你的 OpenAI API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 OpenAI API Key',
-      },
-      OpenRouter: {
-        description: '输入你的 OpenRouter API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 OpenRouter API Key',
-      },
-      Perplexity: {
-        description: '输入你的 Perplexity API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 Perplexity API Key',
-      },
-      TogetherAI: {
-        description: '输入你的 TogetherAI API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 TogetherAI API Key',
-      },
-      ZeroOne: {
-        description: '输入你的零一万物 API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义零一万物 API Key',
-      },
-      Zhipu: {
-        description: '输入你的 Zhipu API Key 即可开始会话。应用不会记录你的 API Key',
-        title: '使用自定义 Zhipu API Key',
-      },
+    addProxyUrl: '添加 OpenAI 代理地址（可选）',
+    apiKey: {
+      description: '输入你的 {{name}} API Key 即可开始会话',
+      title: '使用自定义 {{name}} API Key',
     },
     closeMessage: '关闭提示',
     confirm: '确认并重试',
-    model: {
-      Ollama: {
-        confirm: '下载',
-        description: '输入你的 Ollama 模型标签，完成即可继续会话',
-        title: '下载指定的 Ollama 模型',
-      },
-    },
     oauth: {
       description: '管理员已开启统一登录认证，点击下方按钮登录，即可解锁应用',
       success: '登录成功',
@@ -185,5 +177,14 @@ export default {
       apiKey: '自定义 API Key',
       password: '密码',
     },
+  },
+  upload: {
+    desc: '详情: {{detail}}',
+    fileOnlySupportInServerMode:
+      '当前部署模式不支持上传非图片文件，如需上传 {{ext}} 格式，请切换到服务端数据库部署或使用 {{cloud}} 服务',
+    networkError: '请确认你的网络是否正常，并检查文件存储服务跨域配置是否正确',
+    title: '文件上传失败，请检查网络连接或稍后再试',
+    unknownError: '错误原因: {{reason}}',
+    uploadFailed: '文件上传失败',
   },
 };

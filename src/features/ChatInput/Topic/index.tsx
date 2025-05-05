@@ -1,37 +1,64 @@
-import { ActionIcon, Icon, Tooltip } from '@lobehub/ui';
-import { Button } from 'antd';
+import { ActionIcon, Button, Hotkey, Tooltip } from '@lobehub/ui';
+import { Popconfirm } from 'antd';
 import { LucideGalleryVerticalEnd, LucideMessageSquarePlus } from 'lucide-react';
-import { memo } from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Flexbox } from 'react-layout-kit';
 
-import HotKeys from '@/components/HotKeys';
-import { PREFIX_KEY, SAVE_TOPIC_KEY } from '@/const/hotkeys';
+import { useActionSWR } from '@/libs/swr';
 import { useChatStore } from '@/store/chat';
+import { useUserStore } from '@/store/user';
+import { settingsSelectors } from '@/store/user/selectors';
+import { HotkeyEnum } from '@/types/hotkey';
 
 const SaveTopic = memo<{ mobile?: boolean }>(({ mobile }) => {
   const { t } = useTranslation('chat');
+  const hotkey = useUserStore(settingsSelectors.getHotkeyById(HotkeyEnum.SaveTopic));
   const [hasTopic, openNewTopicOrSaveTopic] = useChatStore((s) => [
     !!s.activeTopicId,
     s.openNewTopicOrSaveTopic,
   ]);
 
+  const { mutate, isValidating } = useActionSWR('openNewTopicOrSaveTopic', openNewTopicOrSaveTopic);
+
+  const [confirmOpened, setConfirmOpened] = useState(false);
+
   const icon = hasTopic ? LucideMessageSquarePlus : LucideGalleryVerticalEnd;
-  const Render = mobile ? ActionIcon : Button;
-  const iconRender: any = mobile ? icon : <Icon icon={icon} />;
   const desc = t(hasTopic ? 'topic.openNewTopic' : 'topic.saveCurrentMessages');
 
-  const hotkeys = [PREFIX_KEY, SAVE_TOPIC_KEY].join('+');
-  useHotkeys(hotkeys, openNewTopicOrSaveTopic, {
-    enableOnFormTags: true,
-    preventDefault: true,
-  });
-
-  return (
-    <Tooltip title={<HotKeys desc={desc} keys={hotkeys} />}>
-      <Render aria-label={desc} icon={iconRender} onClick={openNewTopicOrSaveTopic} />
-    </Tooltip>
-  );
+  if (mobile) {
+    return (
+      <Popconfirm
+        arrow={false}
+        okButtonProps={{ danger: false, type: 'primary' }}
+        onConfirm={() => mutate()}
+        onOpenChange={setConfirmOpened}
+        open={confirmOpened}
+        placement={'top'}
+        title={
+          <Flexbox align={'center'} horizontal style={{ marginBottom: 8 }}>
+            <div style={{ marginRight: '16px', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
+              {t(hasTopic ? 'topic.checkOpenNewTopic' : 'topic.checkSaveCurrentMessages')}
+            </div>
+            <Hotkey keys={hotkey} />
+          </Flexbox>
+        }
+      >
+        <ActionIcon
+          aria-label={desc}
+          icon={icon}
+          loading={isValidating}
+          onClick={() => setConfirmOpened(true)}
+        />
+      </Popconfirm>
+    );
+  } else {
+    return (
+      <Tooltip hotkey={hotkey} title={desc}>
+        <Button aria-label={desc} icon={icon} loading={isValidating} onClick={() => mutate()} />
+      </Tooltip>
+    );
+  }
 });
 
 export default SaveTopic;

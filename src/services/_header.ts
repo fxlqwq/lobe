@@ -1,12 +1,13 @@
 import {
-  AZURE_OPENAI_API_VERSION,
   LOBE_CHAT_ACCESS_CODE,
+  LOBE_USER_ID,
   OPENAI_API_KEY_HEADER_KEY,
   OPENAI_END_POINT,
-  USE_AZURE_OPENAI,
 } from '@/const/fetch';
-import { useGlobalStore } from '@/store/global';
-import { modelProviderSelectors, settingsSelectors } from '@/store/global/selectors';
+import { isDeprecatedEdition } from '@/const/version';
+import { aiProviderSelectors, useAiInfraStore } from '@/store/aiInfra';
+import { useUserStore } from '@/store/user';
+import { keyVaultsConfigSelectors } from '@/store/user/selectors';
 
 /**
  * TODO: Need to be removed after tts refactor
@@ -14,25 +15,24 @@ import { modelProviderSelectors, settingsSelectors } from '@/store/global/select
  */
 // eslint-disable-next-line no-undef
 export const createHeaderWithOpenAI = (header?: HeadersInit): HeadersInit => {
-  const openai = modelProviderSelectors.openAIConfig(useGlobalStore.getState());
+  const state = useUserStore.getState();
 
-  const apiKey = openai.OPENAI_API_KEY || '';
-  const endpoint = openai.endpoint || '';
+  let keyVaults: Record<string, any> = {};
 
-  // eslint-disable-next-line no-undef
-  const result: HeadersInit = {
-    ...header,
-    [LOBE_CHAT_ACCESS_CODE]: settingsSelectors.password(useGlobalStore.getState()),
-    [OPENAI_API_KEY_HEADER_KEY]: apiKey,
-    [OPENAI_END_POINT]: endpoint,
-  };
-
-  if (openai.useAzure) {
-    Object.assign(result, {
-      [AZURE_OPENAI_API_VERSION]: openai.azureApiVersion || '',
-      [USE_AZURE_OPENAI]: '1',
-    });
+  // TODO: remove this condition in V2.0
+  if (isDeprecatedEdition) {
+    keyVaults = keyVaultsConfigSelectors.getVaultByProvider('openai' as any)(
+      useUserStore.getState(),
+    );
+  } else {
+    keyVaults = aiProviderSelectors.providerKeyVaults('openai')(useAiInfraStore.getState()) || {};
   }
-
-  return result;
+  // eslint-disable-next-line no-undef
+  return {
+    ...header,
+    [LOBE_CHAT_ACCESS_CODE]: keyVaultsConfigSelectors.password(state),
+    [LOBE_USER_ID]: state.user?.id || '',
+    [OPENAI_API_KEY_HEADER_KEY]: keyVaults.apiKey || '',
+    [OPENAI_END_POINT]: keyVaults.baseURL || '',
+  };
 };

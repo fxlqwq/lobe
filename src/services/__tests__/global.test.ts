@@ -1,5 +1,8 @@
 import { Mock, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { edgeClient } from '@/libs/trpc/client';
+import { GlobalRuntimeConfig } from '@/types/serverConfig';
+
 import { globalService } from '../global';
 
 global.fetch = vi.fn();
@@ -8,20 +11,34 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+vi.mock('@/libs/trpc/client', () => {
+  return {
+    edgeClient: {
+      config: {
+        getGlobalConfig: { query: vi.fn() },
+        getDefaultAgentConfig: { query: vi.fn() },
+      },
+      appStatus: {
+        getLatestChangelogId: { query: vi.fn() },
+      },
+    },
+  };
+});
+
 describe('GlobalService', () => {
   describe('getLatestVersion', () => {
     it('should return the latest version when fetch is successful', async () => {
       // Arrange
       const mockVersion = '1.0.0';
       (fetch as Mock).mockResolvedValue({
-        json: () => Promise.resolve({ 'dist-tags': { latest: mockVersion } }),
+        json: () => Promise.resolve({ version: mockVersion }),
       });
 
       // Act
       const version = await globalService.getLatestVersion();
 
       // Assert
-      expect(fetch).toHaveBeenCalledWith('https://registry.npmmirror.com/@lobehub/chat');
+      expect(fetch).toHaveBeenCalledWith('https://registry.npmmirror.com/@lobehub/chat/latest');
       expect(version).toBe(mockVersion);
     });
 
@@ -60,15 +77,30 @@ describe('GlobalService', () => {
   describe('ServerConfig', () => {
     it('should return the serverConfig when fetch is successful', async () => {
       // Arrange
-      (fetch as Mock).mockResolvedValue({
-        json: () => Promise.resolve({ customModelName: 'abc' }),
-      });
+      const mockConfig = {
+        serverConfig: { enabledOAuthSSO: true },
+        serverFeatureFlags: {},
+      } as GlobalRuntimeConfig;
+      vi.spyOn(edgeClient.config.getGlobalConfig, 'query').mockResolvedValue(mockConfig);
 
       // Act
       const config = await globalService.getGlobalConfig();
 
       // Assert
-      expect(config).toEqual({ customModelName: 'abc' });
+      expect(config).toEqual(mockConfig);
+    });
+
+    it('should return the defaultAgentConfig when fetch is successful', async () => {
+      // Arrange
+      vi.spyOn(edgeClient.config.getDefaultAgentConfig, 'query').mockResolvedValue({
+        model: 'gemini-pro',
+      });
+
+      // Act
+      const config = await globalService.getDefaultAgentConfig();
+
+      // Assert
+      expect(config).toEqual({ model: 'gemini-pro' });
     });
   });
 });

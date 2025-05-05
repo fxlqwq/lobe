@@ -1,500 +1,760 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { eq, inArray } from 'drizzle-orm/expressions';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DBModel } from '@/database/core/types/db';
-import { CreateMessageParams, MessageModel } from '@/database/models/message';
-import { DB_Message } from '@/database/schemas/message';
-import { DB_Topic } from '@/database/schemas/topic';
-import { nanoid } from '@/utils/uuid';
-import * as uuidUtils from '@/utils/uuid';
+import { LobeChatDatabase } from '@/database/type';
 
-import { CreateTopicParams, QueryTopicParams, TopicModel } from '../topic';
+import { messages, sessions, topics, users } from '../../schemas';
+import { CreateTopicParams, TopicModel } from '../topic';
+import { getTestDB } from './_util';
+
+const serverDB: LobeChatDatabase = await getTestDB();
+
+const userId = 'topic-user-test';
+const sessionId = 'topic-session';
+const topicModel = new TopicModel(serverDB, userId);
 
 describe('TopicModel', () => {
-  let topicData: CreateTopicParams;
+  beforeEach(async () => {
+    await serverDB.delete(users);
 
-  beforeEach(() => {
-    // Set up topic data with the correct structure
-    topicData = {
-      sessionId: 'session1',
-      title: 'Test Topic',
-      favorite: false,
-    };
+    // 创建测试数据
+    await serverDB.transaction(async (tx) => {
+      await tx.insert(users).values({ id: userId });
+      await tx.insert(sessions).values({ id: sessionId, userId });
+    });
   });
 
   afterEach(async () => {
-    // Clean up the database after each test
-    await TopicModel.clearTable();
+    // 在每个测试用例之后,清空表
+    await serverDB.delete(users);
   });
 
-  describe('create', () => {
-    it('should create a topic record', async () => {
-      const result = await TopicModel.create(topicData);
-
-      expect(result).toHaveProperty('id');
-      // Verify that the topic has been added to the database
-      const topicInDb = await TopicModel.findById(result.id);
-
-      expect(topicInDb).toEqual(
-        expect.objectContaining({
-          title: topicData.title,
-          favorite: topicData.favorite ? 1 : 0,
-          sessionId: topicData.sessionId,
-        }),
-      );
-    });
-
-    it('should create a topic with favorite set to true', async () => {
-      const favoriteTopicData: CreateTopicParams = {
-        ...topicData,
-        favorite: true,
-      };
-      const result = await TopicModel.create(favoriteTopicData);
-
-      expect(result).toHaveProperty('id');
-      const topicInDb = await TopicModel.findById(result.id);
-      expect(topicInDb).toEqual(
-        expect.objectContaining({
-          title: favoriteTopicData.title,
-          favorite: 1,
-          sessionId: favoriteTopicData.sessionId,
-        }),
-      );
-    });
-
-    it('should update messages with the new topic id when messages are provided', async () => {
-      const messagesToUpdate = [nanoid(), nanoid()];
-      // 假设这些消息存在于数据库中
-      for (const messageId of messagesToUpdate) {
-        await MessageModel.table.add({ id: messageId, text: 'Sample message', topicId: null });
-      }
-
-      const topicDataWithMessages = {
-        ...topicData,
-        messages: messagesToUpdate,
-      };
-
-      const topic = await TopicModel.create(topicDataWithMessages);
-      expect(topic).toHaveProperty('id');
-
-      // 验证数据库中的消息是否已更新
-      const updatedMessages: DB_Message[] = await MessageModel.table
-        .where('id')
-        .anyOf(messagesToUpdate)
-        .toArray();
-
-      expect(updatedMessages).toHaveLength(messagesToUpdate.length);
-      for (const message of updatedMessages) {
-        expect(message.topicId).toEqual(topic.id);
-      }
-    });
-
-    it('should create a topic with a unique id when no id is provided', async () => {
-      const spy = vi.spyOn(uuidUtils, 'nanoid'); // 使用 Vitest 的 spy 功能来监视 nanoid 调用
-      const result = await TopicModel.create(topicData);
-
-      expect(spy).toHaveBeenCalled(); // 验证 nanoid 被调用来生成 id
-      expect(result).toHaveProperty('id');
-      expect(typeof result.id).toBe('string');
-      spy.mockRestore(); // 测试结束后恢复原始行为
-    });
-  });
-  describe('batch create', () => {
-    it('should batch create topic records', async () => {
-      const topicsToCreate = [topicData, topicData];
-      const results = await TopicModel.batchCreate(topicsToCreate);
-
-      expect(results.ids).toHaveLength(topicsToCreate.length);
-      // Verify that the topics have been added to the database
-      for (const result of results.ids!) {
-        const topicInDb = await TopicModel.findById(result);
-        expect(topicInDb).toEqual(
-          expect.objectContaining({
-            title: topicData.title,
-            favorite: topicData.favorite ? 1 : 0,
-            sessionId: topicData.sessionId,
-          }),
-        );
-      }
-    });
-
-    it('should batch create topics with mixed favorite values', async () => {
-      const mixedTopicsData: CreateTopicParams[] = [
-        { ...topicData, favorite: true },
-        { ...topicData, favorite: false },
-      ];
-
-      const results = await TopicModel.batchCreate(mixedTopicsData);
-
-      expect(results.ids).toHaveLength(mixedTopicsData.length);
-      for (const id of results.ids!) {
-        const topicInDb = await TopicModel.findById(id);
-        expect(topicInDb).toBeDefined();
-        expect(topicInDb.favorite).toBeGreaterThanOrEqual(0);
-        expect(topicInDb.favorite).toBeLessThanOrEqual(1);
-      }
-    });
-  });
-
-  it('should query topics with pagination', async () => {
-    // Create multiple topics to test the query method
-    await TopicModel.batchCreate([topicData, topicData]);
-
-    const queryParams: QueryTopicParams = { pageSize: 1, current: 0, sessionId: 'session1' };
-    const queriedTopics = await TopicModel.query(queryParams);
-
-    expect(queriedTopics).toHaveLength(1);
-  });
-
-  it('should find topics by session id', async () => {
-    // Create multiple topics to test the findBySessionId method
-    await TopicModel.batchCreate([topicData, topicData]);
-
-    const topicsBySessionId = await TopicModel.findBySessionId(topicData.sessionId);
-
-    expect(topicsBySessionId).toHaveLength(2);
-    expect(topicsBySessionId.every((i) => i.sessionId === topicData.sessionId)).toBeTruthy();
-  });
-
-  it('should delete a topic and its associated messages', async () => {
-    const createdTopic = await TopicModel.create(topicData);
-
-    await TopicModel.delete(createdTopic.id);
-
-    // Verify the topic and its related messages are deleted
-    const topicInDb = await TopicModel.findById(createdTopic.id);
-    expect(topicInDb).toBeUndefined();
-
-    // You need to verify that messages related to the topic are also deleted
-    // This would require additional setup to create messages associated with the topic
-    // and then assertions to check that they're deleted after the topic itself is deleted
-  });
-
-  it('should batch delete topics by session id', async () => {
-    // Create multiple topics to test the batchDeleteBySessionId method
-    await TopicModel.batchCreate([topicData, topicData]);
-
-    await TopicModel.batchDeleteBySessionId(topicData.sessionId);
-
-    // Verify that all topics with the given session id are deleted
-    const topicsInDb = await TopicModel.findBySessionId(topicData.sessionId);
-    expect(topicsInDb).toHaveLength(0);
-  });
-
-  it('should update a topic', async () => {
-    const createdTopic = await TopicModel.create(topicData);
-    const updateData = { title: 'New Title' };
-
-    await TopicModel.update(createdTopic.id, updateData);
-    const updatedTopic = await TopicModel.findById(createdTopic.id);
-
-    expect(updatedTopic).toHaveProperty('title', 'New Title');
-  });
-
-  describe('toggleFavorite', () => {
-    it('should toggle favorite status of a topic', async () => {
-      const createdTopic = await TopicModel.create(topicData);
-
-      const newState = await TopicModel.toggleFavorite(createdTopic.id);
-
-      expect(newState).toBe(true);
-      const topicInDb = await TopicModel.findById(createdTopic.id);
-      expect(topicInDb).toHaveProperty('favorite', 1);
-    });
-
-    it('should handle toggleFavorite when topic does not exist', async () => {
-      const nonExistentTopicId = 'non-existent-id';
-      await expect(TopicModel.toggleFavorite(nonExistentTopicId)).rejects.toThrow(
-        `Topic with id ${nonExistentTopicId} not found`,
-      );
-    });
-
-    it('should set favorite to specific state using toggleFavorite', async () => {
-      const createdTopic = await TopicModel.create(topicData);
-
-      // Set favorite to true regardless of current state
-      await TopicModel.toggleFavorite(createdTopic.id, true);
-      let topicInDb = await TopicModel.findById(createdTopic.id);
-      expect(topicInDb.favorite).toBe(1);
-
-      // Set favorite to false regardless of current state
-      await TopicModel.toggleFavorite(createdTopic.id, false);
-      topicInDb = await TopicModel.findById(createdTopic.id);
-      expect(topicInDb.favorite).toBe(0);
-    });
-  });
-
-  it('should delete a topic and its associated messages', async () => {
-    // 创建话题和相关联的消息
-    const createdTopic = await TopicModel.create(topicData);
-    const messageData: CreateMessageParams = {
-      content: 'Test Message',
-      topicId: createdTopic.id,
-      sessionId: topicData.sessionId,
-      role: 'user',
-    };
-    await MessageModel.create(messageData);
-
-    // 删除话题
-    await TopicModel.delete(createdTopic.id);
-
-    // 验证话题是否被删除
-    const topicInDb = await TopicModel.findById(createdTopic.id);
-    expect(topicInDb).toBeUndefined();
-
-    // 验证与话题关联的消息是否也被删除
-    const messagesInDb = await MessageModel.query({
-      sessionId: topicData.sessionId,
-      topicId: createdTopic.id,
-    });
-    expect(messagesInDb).toHaveLength(0);
-  });
-
-  it('should batch delete topics and their associated messages', async () => {
-    // 创建多个话题和相关联的消息
-    const createdTopic1 = await TopicModel.create(topicData);
-    const createdTopic2 = await TopicModel.create(topicData);
-
-    const messageData1: CreateMessageParams = {
-      content: 'Test Message 1',
-      topicId: createdTopic1.id,
-      sessionId: topicData.sessionId,
-      role: 'user',
-    };
-    const messageData2: CreateMessageParams = {
-      content: 'Test Message 2',
-      topicId: createdTopic2.id,
-      sessionId: topicData.sessionId,
-      role: 'user',
-    };
-    await MessageModel.create(messageData1);
-    await MessageModel.create(messageData2);
-
-    // 执行批量删除
-    await TopicModel.batchDelete([createdTopic1.id, createdTopic2.id]);
-
-    // 验证话题是否被删除
-    const topicInDb1 = await TopicModel.findById(createdTopic1.id);
-    const topicInDb2 = await TopicModel.findById(createdTopic2.id);
-    expect(topicInDb1).toBeUndefined();
-    expect(topicInDb2).toBeUndefined();
-
-    // 验证与话题关联的消息是否也被删除
-    const messagesInDb1 = await MessageModel.query({
-      sessionId: topicData.sessionId,
-      topicId: createdTopic1.id,
-    });
-    const messagesInDb2 = await MessageModel.query({
-      sessionId: topicData.sessionId,
-      topicId: createdTopic2.id,
-    });
-    expect(messagesInDb1).toHaveLength(0);
-    expect(messagesInDb2).toHaveLength(0);
-  });
-
-  describe('duplicateTopic', () => {
-    let originalTopic: DBModel<DB_Topic>;
-    let originalMessages: any[];
-
-    beforeEach(async () => {
-      // 创建一个原始主题
-      const { id } = await TopicModel.create({
-        title: 'Original Topic',
-        sessionId: 'session1',
-        favorite: false,
-      });
-      originalTopic = await TopicModel.findById(id);
-
-      // 创建一些关联到原始主题的消息
-      originalMessages = await Promise.all(
-        ['Message 1', 'Message 2'].map((text) =>
-          MessageModel.create({
-            content: text,
-            topicId: originalTopic.id,
-            sessionId: originalTopic.sessionId!,
-            role: 'user',
-          }),
-        ),
-      );
-    });
-
-    afterEach(async () => {
-      // 清理数据库中的所有主题和消息
-      await TopicModel.clearTable();
-      await MessageModel.clearTable();
-    });
-
-    it('should duplicate a topic with all associated messages', async () => {
-      // 执行复制操作
-      await TopicModel.duplicateTopic(originalTopic.id);
-
-      // 验证复制后的主题是否存在
-      const duplicatedTopic = await TopicModel.findBySessionId(originalTopic.sessionId!);
-      expect(duplicatedTopic).toHaveLength(2);
-
-      // 验证复制后的消息是否存在
-      const duplicatedMessages = await MessageModel.query({
-        sessionId: originalTopic.sessionId!,
-        topicId: duplicatedTopic[1].id, // 假设复制的主题是第二个
-      });
-      expect(duplicatedMessages).toHaveLength(originalMessages.length);
-    });
-
-    it('should throw an error if the topic does not exist', async () => {
-      // 尝试复制一个不存在的主题
-      const nonExistentTopicId = nanoid();
-      await expect(TopicModel.duplicateTopic(nonExistentTopicId)).rejects.toThrow(
-        `Topic with id ${nonExistentTopicId} not found`,
-      );
-    });
-
-    it('should preserve the properties of the duplicated topic', async () => {
-      // 执行复制操作
-      await TopicModel.duplicateTopic(originalTopic.id);
-
-      // 获取复制的主题
-      const topics = await TopicModel.findBySessionId(originalTopic.sessionId!);
-      const duplicatedTopic = topics.find((topic) => topic.id !== originalTopic.id);
-
-      // 验证复制的主题是否保留了原始主题的属性
-      expect(duplicatedTopic).toBeDefined();
-      expect(duplicatedTopic).toMatchObject({
-        title: originalTopic.title,
-        favorite: originalTopic.favorite,
-        sessionId: originalTopic.sessionId,
-      });
-      // 确保生成了新的 ID
-      expect(duplicatedTopic.id).not.toBe(originalTopic.id);
-    });
-
-    it('should properly handle the messages hierarchy when duplicating', async () => {
-      // 创建一个子消息关联到其中一个原始消息
-      const { id } = await MessageModel.create({
-        content: 'Child Message',
-        topicId: originalTopic.id,
-        parentId: originalMessages[0].id,
-        sessionId: originalTopic.sessionId!,
-        role: 'user',
-      });
-      const childMessage = await MessageModel.findById(id);
-
-      // 执行复制操作
-      await TopicModel.duplicateTopic(originalTopic.id);
-
-      // 获取复制的消息
-      const duplicatedMessages = await MessageModel.queryBySessionId(originalTopic.sessionId!);
-
-      // 验证复制的子消息是否存在并且 parentId 已更新
-      const duplicatedChildMessage = duplicatedMessages.find(
-        (message) => message.content === childMessage.content && message.id !== childMessage.id,
-      );
-
-      expect(duplicatedChildMessage).toBeDefined();
-      expect(duplicatedChildMessage.parentId).not.toBe(childMessage.parentId);
-      expect(duplicatedChildMessage.parentId).toBeDefined();
-    });
-
-    it('should fail if the database transaction fails', async () => {
-      // 强制数据库事务失败，例如通过在复制过程中抛出异常
-      const dbTransactionFailedError = new Error('DB transaction failed');
-      const spyOn = vi.spyOn(TopicModel['db'], 'transaction').mockImplementation((async () => {
-        throw dbTransactionFailedError;
-      }) as any);
-
-      // 尝试复制主题并捕捉期望的错误
-      await expect(TopicModel.duplicateTopic(originalTopic.id)).rejects.toThrow(
-        dbTransactionFailedError,
-      );
-      spyOn.mockRestore();
-    });
-
-    it('should not create partial duplicates if the process fails at some point', async () => {
-      // 假设复制消息的过程中发生了错误
-      vi.spyOn(MessageModel, 'duplicateMessages').mockImplementation(async () => {
-        throw new Error('Failed to duplicate messages');
+  describe('query', () => {
+    it('should query topics by user ID', async () => {
+      // 创建一些测试数据
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(users).values([{ id: '456' }]);
+
+        await tx.insert(topics).values([
+          { id: '1', userId, sessionId, updatedAt: new Date('2023-01-01') },
+          { id: '4', userId, sessionId, updatedAt: new Date('2023-03-01') },
+          { id: '2', userId, sessionId, updatedAt: new Date('2023-02-01'), favorite: true },
+          { id: '5', userId, sessionId, updatedAt: new Date('2023-05-01'), favorite: true },
+          { id: '3', userId: '456', sessionId, updatedAt: new Date('2023-03-01') },
+        ]);
       });
 
-      // 尝试复制主题，期望会抛出错误
-      await expect(TopicModel.duplicateTopic(originalTopic.id)).rejects.toThrow();
+      // 调用 query 方法
+      const result = await topicModel.query({ sessionId });
 
-      // 确保没有创建任何副本
-      const topics = await TopicModel.findBySessionId(originalTopic.sessionId!);
-      expect(topics).toHaveLength(1); // 只有原始主题
+      // 断言结果
+      expect(result).toHaveLength(4);
+      expect(result[0].id).toBe('5'); // favorite 的 topic 应该在前面，按照 updatedAt 降序排序
+      expect(result[1].id).toBe('2');
+      expect(result[2].id).toBe('4'); // 按照 updatedAt 降序排序
+    });
 
-      const messages = await MessageModel.queryBySessionId(originalTopic.sessionId!);
-      expect(messages).toHaveLength(originalMessages.length); // 只有原始消息
+    it('should query topics with pagination', async () => {
+      // 创建测试数据
+      await serverDB.insert(topics).values([
+        { id: '1', userId, updatedAt: new Date('2023-01-01') },
+        { id: '2', userId, updatedAt: new Date('2023-02-01') },
+        { id: '3', userId, updatedAt: new Date('2023-03-01') },
+      ]);
+
+      // 应该返回 2 个 topics
+      const result1 = await topicModel.query({ current: 0, pageSize: 2 });
+      expect(result1).toHaveLength(2);
+
+      // 应该只返回 1 个 topic,并且是第 2 个
+      const result2 = await topicModel.query({ current: 1, pageSize: 1 });
+      expect(result2).toHaveLength(1);
+      expect(result2[0].id).toBe('2');
+    });
+
+    it('should query topics by session ID', async () => {
+      // 创建测试数据
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(sessions).values([
+          { id: 'session1', userId },
+          { id: 'session2', userId },
+        ]);
+
+        await tx.insert(topics).values([
+          { id: '1', userId, sessionId: 'session1' },
+          { id: '2', userId, sessionId: 'session2' },
+          { id: '3', userId }, // 没有 sessionId
+        ]);
+      });
+
+      // 应该只返回属于 session1 的 topic
+      const result = await topicModel.query({ sessionId: 'session1' });
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('1');
+    });
+
+    it('should return topics based on pagination parameters', async () => {
+      // 创建测试数据
+      await serverDB.insert(topics).values([
+        { id: 'topic1', sessionId, userId, updatedAt: new Date('2023-01-01') },
+        { id: 'topic2', sessionId, userId, updatedAt: new Date('2023-01-02') },
+        { id: 'topic3', sessionId, userId, updatedAt: new Date('2023-01-03') },
+      ]);
+
+      // 调用 query 方法
+      const result1 = await topicModel.query({ current: 0, pageSize: 2, sessionId });
+      const result2 = await topicModel.query({ current: 1, pageSize: 2, sessionId });
+
+      // 断言返回结果符合分页要求
+      expect(result1).toHaveLength(2);
+      expect(result1[0].id).toBe('topic3');
+      expect(result1[1].id).toBe('topic2');
+
+      expect(result2).toHaveLength(1);
+      expect(result2[0].id).toBe('topic1');
     });
   });
 
-  describe('clearTable', () => {
-    it('should clear the table', async () => {
-      // Create a topic to ensure the table is not empty
-      await TopicModel.create(topicData);
+  describe('findById', () => {
+    it('should return a topic by id', async () => {
+      // 创建测试数据
+      await serverDB.insert(topics).values({ id: 'topic1', sessionId, userId });
 
-      // Clear the table
-      await TopicModel.clearTable();
+      // 调用 findById 方法
+      const result = await topicModel.findById('topic1');
 
-      // Verify the table is empty
-      const topics = await TopicModel.queryAll();
-      expect(topics).toHaveLength(0);
+      // 断言返回结果符合预期
+      expect(result?.id).toBe('topic1');
+    });
+
+    it('should return undefined for non-existent topic', async () => {
+      // 调用 findById 方法
+      const result = await topicModel.findById('non-existent');
+
+      // 断言返回 undefined
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('queryAll', () => {
+    it('should return all topics', async () => {
+      // 创建测试数据
+      await serverDB.insert(topics).values([
+        { id: 'topic1', sessionId, userId },
+        { id: 'topic2', sessionId, userId },
+      ]);
+
+      // 调用 queryAll 方法
+      const result = await topicModel.queryAll();
+
+      // 断言返回所有的 topics
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe('topic1');
+      expect(result[1].id).toBe('topic2');
+    });
+  });
+
+  describe('queryByKeyword', () => {
+    it('should return topics matching topic title keyword', async () => {
+      // 创建测试数据
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(topics).values([
+          { id: 'topic1', title: 'Hello world', sessionId, userId },
+          { id: 'topic2', title: 'Goodbye', sessionId, userId },
+        ]);
+        await tx
+          .insert(messages)
+          .values([
+            { id: 'message1', role: 'assistant', content: 'abc there', topicId: 'topic1', userId },
+          ]);
+      });
+      // 调用 queryByKeyword 方法
+      const result = await topicModel.queryByKeyword('hello', sessionId);
+
+      // 断言返回匹配关键字的 topic
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('topic1');
+    });
+
+    it('should return topics matching message content keyword', async () => {
+      // 创建测试数据
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(topics).values([
+          { id: 'topic1', title: 'abc world', sessionId, userId },
+          { id: 'topic2', title: 'Goodbye', sessionId, userId },
+        ]);
+        await tx.insert(messages).values([
+          {
+            id: 'message1',
+            role: 'assistant',
+            content: 'Hello there',
+            topicId: 'topic1',
+            userId,
+          },
+        ]);
+      });
+      // 调用 queryByKeyword 方法
+      const result = await topicModel.queryByKeyword('hello', sessionId);
+
+      // 断言返回匹配关键字的 topic
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('topic1');
+    });
+
+    it('should return nothing if not match', async () => {
+      // 创建测试数据
+      await serverDB.insert(topics).values([
+        { id: 'topic1', title: 'Hello world', userId },
+        { id: 'topic2', title: 'Goodbye', sessionId, userId },
+      ]);
+      await serverDB
+        .insert(messages)
+        .values([
+          { id: 'message1', role: 'assistant', content: 'abc there', topicId: 'topic1', userId },
+        ]);
+
+      // 调用 queryByKeyword 方法
+      const result = await topicModel.queryByKeyword('hello', sessionId);
+
+      // 断言返回匹配关键字的 topic
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('count', () => {
+    it('should return total number of topics', async () => {
+      // 创建测试数据
+      await serverDB.insert(topics).values([
+        { id: 'abc_topic1', sessionId, userId },
+        { id: 'abc_topic2', sessionId, userId },
+      ]);
+
+      // 调用 count 方法
+      const result = await topicModel.count();
+
+      // 断言返回 topics 总数
+      expect(result).toBe(2);
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete a topic and its associated messages', async () => {
+      const topicId = 'topic1';
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(users).values({ id: '345' });
+        await tx.insert(sessions).values([
+          { id: 'session1', userId },
+          { id: 'session2', userId: '345' },
+        ]);
+        await tx.insert(topics).values([
+          { id: topicId, sessionId: 'session1', userId },
+          { id: 'topic2', sessionId: 'session2', userId: '345' },
+        ]);
+        await tx.insert(messages).values([
+          { id: 'message1', role: 'user', topicId: topicId, userId },
+          { id: 'message2', role: 'assistant', topicId: topicId, userId },
+          { id: 'message3', role: 'user', topicId: 'topic2', userId: '345' },
+        ]);
+      });
+
+      // 调用 delete 方法
+      await topicModel.delete(topicId);
+
+      // 断言 topic 和关联的 messages 都被删除了
+      expect(
+        await serverDB.select().from(messages).where(eq(messages.topicId, topicId)),
+      ).toHaveLength(0);
+      expect(await serverDB.select().from(topics)).toHaveLength(1);
+
+      expect(await serverDB.select().from(messages)).toHaveLength(1);
+    });
+  });
+
+  describe('batchDeleteBySessionId', () => {
+    it('should delete all topics associated with a session', async () => {
+      await serverDB.insert(sessions).values([
+        { id: 'session1', userId },
+        { id: 'session2', userId },
+      ]);
+      await serverDB.insert(topics).values([
+        { id: 'topic1', sessionId: 'session1', userId },
+        { id: 'topic2', sessionId: 'session1', userId },
+        { id: 'topic3', sessionId: 'session2', userId },
+        { id: 'topic4', userId },
+      ]);
+
+      // 调用 batchDeleteBySessionId 方法
+      await topicModel.batchDeleteBySessionId('session1');
+
+      // 断言属于 session1 的 topics 都被删除了
+      expect(
+        await serverDB.select().from(topics).where(eq(topics.sessionId, 'session1')),
+      ).toHaveLength(0);
+      expect(await serverDB.select().from(topics)).toHaveLength(2);
+    });
+    it('should delete all topics associated without sessionId', async () => {
+      await serverDB.insert(sessions).values([{ id: 'session1', userId }]);
+
+      await serverDB.insert(topics).values([
+        { id: 'topic1', sessionId: 'session1', userId },
+        { id: 'topic2', sessionId: 'session1', userId },
+        { id: 'topic4', userId },
+      ]);
+
+      // 调用 batchDeleteBySessionId 方法
+      await topicModel.batchDeleteBySessionId();
+
+      // 断言属于 session1 的 topics 都被删除了
+      expect(
+        await serverDB.select().from(topics).where(eq(topics.sessionId, 'session1')),
+      ).toHaveLength(2);
+      expect(await serverDB.select().from(topics)).toHaveLength(2);
+    });
+  });
+
+  describe('batchDelete', () => {
+    it('should delete multiple topics and their associated messages', async () => {
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(sessions).values({ id: 'session1', userId });
+        await tx.insert(topics).values([
+          { id: 'topic1', sessionId: 'session1', userId },
+          { id: 'topic2', sessionId: 'session1', userId },
+          { id: 'topic3', sessionId: 'session1', userId },
+        ]);
+        await tx.insert(messages).values([
+          { id: 'message1', role: 'user', topicId: 'topic1', userId },
+          { id: 'message2', role: 'assistant', topicId: 'topic2', userId },
+          { id: 'message3', role: 'user', topicId: 'topic3', userId },
+        ]);
+      });
+
+      // 调用 batchDelete 方法
+      await topicModel.batchDelete(['topic1', 'topic2']);
+
+      // 断言指定的 topics 和关联的 messages 都被删除了
+      expect(await serverDB.select().from(topics)).toHaveLength(1);
+      expect(await serverDB.select().from(messages)).toHaveLength(1);
+    });
+  });
+
+  describe('deleteAll', () => {
+    it('should delete all topics of the user', async () => {
+      await serverDB.insert(users).values({ id: '345' });
+      await serverDB.insert(sessions).values([
+        { id: 'session1', userId },
+        { id: 'session2', userId: '345' },
+      ]);
+      await serverDB.insert(topics).values([
+        { id: 'topic1', sessionId: 'session1', userId },
+        { id: 'topic2', sessionId: 'session1', userId },
+        { id: 'topic3', sessionId: 'session2', userId: '345' },
+      ]);
+
+      // 调用 deleteAll 方法
+      await topicModel.deleteAll();
+
+      // 断言当前用户的所有 topics 都被删除了
+      expect(await serverDB.select().from(topics).where(eq(topics.userId, userId))).toHaveLength(0);
+      expect(await serverDB.select().from(topics)).toHaveLength(1);
     });
   });
 
   describe('update', () => {
     it('should update a topic', async () => {
-      // Create a topic
-      const createdTopic = await TopicModel.create(topicData);
+      // 创建一个测试 session
+      const topicId = '123';
+      await serverDB.insert(topics).values({ userId, id: topicId, title: 'Test', favorite: true });
 
-      // Update the topic
-      const newTitle = 'Updated Title';
-      await TopicModel.update(createdTopic.id, { title: newTitle });
+      // 调用 update 方法更新 session
+      const item = await topicModel.update(topicId, {
+        title: 'Updated Test',
+        favorite: false,
+      });
 
-      // Verify the topic is updated
-      const updatedTopic = await TopicModel.findById(createdTopic.id);
-      expect(updatedTopic.title).toBe(newTitle);
+      // 断言更新后的结果
+      expect(item).toHaveLength(1);
+      expect(item[0].title).toBe('Updated Test');
+      expect(item[0].favorite).toBeFalsy();
+    });
+
+    it('should not update a topic if user ID does not match', async () => {
+      // 创建一个测试 topic, 但使用不同的 user ID
+      await serverDB.insert(users).values([{ id: '456' }]);
+      const topicId = '123';
+      await serverDB
+        .insert(topics)
+        .values({ userId: '456', id: topicId, title: 'Test', favorite: true });
+
+      // 尝试更新这个 topic , 应该不会有任何更新
+      const item = await topicModel.update(topicId, {
+        title: 'Updated Test Session',
+      });
+
+      expect(item).toHaveLength(0);
     });
   });
 
-  describe('batchDelete', () => {
-    it('should batch delete topics', async () => {
-      // Create multiple topics
-      const topic1 = await TopicModel.create(topicData);
-      const topic2 = await TopicModel.create(topicData);
+  describe('create', () => {
+    it('should create a new topic and associate messages', async () => {
+      const topicData = {
+        title: 'New Topic',
+        favorite: true,
+        sessionId,
+        messages: ['message1', 'message2'],
+      } satisfies CreateTopicParams;
 
-      await TopicModel.create(topicData);
+      const topicId = 'new-topic';
 
-      const ids = [topic1.id, topic2.id];
-      // Batch delete the topics
-      await TopicModel.batchDelete(ids);
+      // 预先创建一些 messages
+      await serverDB.insert(messages).values([
+        { id: 'message1', role: 'user', userId, sessionId },
+        { id: 'message2', role: 'assistant', userId, sessionId },
+        { id: 'message3', role: 'user', userId, sessionId },
+      ]);
 
-      expect(await TopicModel.table.count()).toEqual(1);
+      // 调用 create 方法
+      const createdTopic = await topicModel.create(topicData, topicId);
+
+      // 断言返回的 topic 数据正确
+      expect(createdTopic).toEqual({
+        id: topicId,
+        title: 'New Topic',
+        favorite: true,
+        sessionId,
+        userId,
+        historySummary: null,
+        metadata: null,
+        clientId: null,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+        accessedAt: expect.any(Date),
+      });
+
+      // 断言 topic 已在数据库中创建
+      const dbTopic = await serverDB.select().from(topics).where(eq(topics.id, topicId));
+      expect(dbTopic).toHaveLength(1);
+      expect(dbTopic[0]).toEqual(createdTopic);
+
+      // 断言关联的 messages 的 topicId 已更新
+      const associatedMessages = await serverDB
+        .select()
+        .from(messages)
+        .where(inArray(messages.id, topicData.messages!));
+      expect(associatedMessages).toHaveLength(2);
+      expect(associatedMessages.every((msg) => msg.topicId === topicId)).toBe(true);
+
+      // 断言未关联的 message 的 topicId 没有更新
+      const unassociatedMessage = await serverDB
+        .select()
+        .from(messages)
+        .where(eq(messages.id, 'message3'));
+
+      expect(unassociatedMessage[0].topicId).toBeNull();
+    });
+
+    it('should create a new topic without associating messages', async () => {
+      const topicData = {
+        title: 'New Topic',
+        favorite: false,
+        sessionId,
+      };
+
+      const topicId = 'new-topic';
+
+      // 调用 create 方法
+      const createdTopic = await topicModel.create(topicData, topicId);
+
+      // 断言返回的 topic 数据正确
+      expect(createdTopic).toEqual({
+        id: topicId,
+        title: 'New Topic',
+        favorite: false,
+        clientId: null,
+        historySummary: null,
+        metadata: null,
+        sessionId,
+        userId,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+        accessedAt: expect.any(Date),
+      });
+
+      // 断言 topic 已在数据库中创建
+      const dbTopic = await serverDB.select().from(topics).where(eq(topics.id, topicId));
+      expect(dbTopic).toHaveLength(1);
+      expect(dbTopic[0]).toEqual(createdTopic);
     });
   });
 
-  describe('queryAll', () => {
-    it('should query all topics', async () => {
-      // Create multiple topics
-      await TopicModel.batchCreate([topicData, topicData]);
+  describe('batchCreate', () => {
+    it('should batch create topics and update associated messages', async () => {
+      // 准备测试数据
+      const topicParams = [
+        {
+          title: 'Topic 1',
+          favorite: true,
+          sessionId,
+          messages: ['message1', 'message2'],
+        },
+        {
+          title: 'Topic 2',
+          favorite: false,
+          sessionId,
+          messages: ['message3'],
+        },
+      ];
+      await serverDB.insert(messages).values([
+        { id: 'message1', role: 'user', userId },
+        { id: 'message2', role: 'assistant', userId },
+        { id: 'message3', role: 'user', userId },
+      ]);
 
-      // Query all topics
-      const topics = await TopicModel.queryAll();
+      // 调用 batchCreate 方法
+      const createdTopics = await topicModel.batchCreate(topicParams);
 
-      // Verify all topics are queried
-      expect(topics).toHaveLength(2);
+      // 断言返回的 topics 数据正确
+      expect(createdTopics).toHaveLength(2);
+      expect(createdTopics[0]).toMatchObject({
+        title: 'Topic 1',
+        favorite: true,
+        sessionId,
+        userId,
+      });
+      expect(createdTopics[1]).toMatchObject({
+        title: 'Topic 2',
+        favorite: false,
+        sessionId,
+        userId,
+      });
+
+      // 断言 topics 表中的数据正确
+      const items = await serverDB.select().from(topics);
+      expect(items).toHaveLength(2);
+      expect(items[0]).toMatchObject({
+        title: 'Topic 1',
+        favorite: true,
+        sessionId,
+        userId,
+      });
+      expect(items[1]).toMatchObject({
+        title: 'Topic 2',
+        favorite: false,
+        sessionId,
+        userId,
+      });
+
+      // 断言关联的 messages 的 topicId 被正确更新
+      const updatedMessages = await serverDB.select().from(messages);
+      expect(updatedMessages).toHaveLength(3);
+      expect(updatedMessages[0].topicId).toBe(createdTopics[0].id);
+      expect(updatedMessages[1].topicId).toBe(createdTopics[0].id);
+      expect(updatedMessages[2].topicId).toBe(createdTopics[1].id);
+    });
+
+    it('should generate topic IDs if not provided', async () => {
+      // 准备测试数据
+      const topicParams = [
+        {
+          title: 'Topic 1',
+          favorite: true,
+          sessionId,
+        },
+        {
+          title: 'Topic 2',
+          favorite: false,
+          sessionId,
+        },
+      ];
+
+      // 调用 batchCreate 方法
+      const createdTopics = await topicModel.batchCreate(topicParams);
+
+      // 断言生成了正确的 topic ID
+      expect(createdTopics[0].id).toBeDefined();
+      expect(createdTopics[1].id).toBeDefined();
+      expect(createdTopics[0].id).not.toBe(createdTopics[1].id);
     });
   });
 
-  describe('queryByKeyword', () => {
-    it('should query topics by keyword', async () => {
-      // Create a topic with a unique title
-      const uniqueTitle = 'Unique Title';
-      await TopicModel.create({ ...topicData, title: uniqueTitle });
+  describe('duplicate', () => {
+    it('should duplicate a topic and its associated messages', async () => {
+      const topicId = 'topic-duplicate';
+      const newTitle = 'Duplicated Topic';
 
-      // Query topics by the unique title
-      const topics = await TopicModel.queryByKeyword(uniqueTitle);
+      // 创建原始的 topic 和 messages
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(topics).values({ id: topicId, sessionId, userId, title: 'Original Topic' });
+        await tx.insert(messages).values([
+          { id: 'message1', role: 'user', topicId, userId, content: 'User message' },
+          { id: 'message2', role: 'assistant', topicId, userId, content: 'Assistant message' },
+        ]);
+      });
 
-      // Verify the correct topic is queried
-      expect(topics).toHaveLength(1);
-      expect(topics[0].title).toBe(uniqueTitle);
+      // 调用 duplicate 方法
+      const { topic: duplicatedTopic, messages: duplicatedMessages } = await topicModel.duplicate(
+        topicId,
+        newTitle,
+      );
+
+      // 断言复制的 topic 的属性正确
+      expect(duplicatedTopic.id).not.toBe(topicId);
+      expect(duplicatedTopic.title).toBe(newTitle);
+      expect(duplicatedTopic.sessionId).toBe(sessionId);
+      expect(duplicatedTopic.userId).toBe(userId);
+
+      // 断言复制的 messages 的属性正确
+      expect(duplicatedMessages).toHaveLength(2);
+      expect(duplicatedMessages[0].id).not.toBe('message1');
+      expect(duplicatedMessages[0].topicId).toBe(duplicatedTopic.id);
+      expect(duplicatedMessages[0].content).toBe('User message');
+      expect(duplicatedMessages[1].id).not.toBe('message2');
+      expect(duplicatedMessages[1].topicId).toBe(duplicatedTopic.id);
+      expect(duplicatedMessages[1].content).toBe('Assistant message');
+    });
+
+    it('should throw an error if the topic to duplicate does not exist', async () => {
+      const topicId = 'nonexistent-topic';
+
+      // 调用 duplicate 方法,期望抛出错误
+      await expect(topicModel.duplicate(topicId)).rejects.toThrow(
+        `Topic with id ${topicId} not found`,
+      );
+    });
+  });
+
+  describe('rank', () => {
+    it('should return ranked topics based on message count', async () => {
+      // 创建测试数据
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(topics).values([
+          { id: 'topic1', title: 'Topic 1', sessionId, userId },
+          { id: 'topic2', title: 'Topic 2', sessionId, userId },
+          { id: 'topic3', title: 'Topic 3', sessionId, userId },
+        ]);
+
+        // topic1 有 3 条消息
+        await tx.insert(messages).values([
+          { id: 'msg1', role: 'user', topicId: 'topic1', userId },
+          { id: 'msg2', role: 'assistant', topicId: 'topic1', userId },
+          { id: 'msg3', role: 'user', topicId: 'topic1', userId },
+        ]);
+
+        // topic2 有 2 条消息
+        await tx.insert(messages).values([
+          { id: 'msg4', role: 'user', topicId: 'topic2', userId },
+          { id: 'msg5', role: 'assistant', topicId: 'topic2', userId },
+        ]);
+
+        // topic3 有 1 条消息
+        await tx.insert(messages).values([{ id: 'msg6', role: 'user', topicId: 'topic3', userId }]);
+      });
+
+      // 调用 rank 方法
+      const result = await topicModel.rank(2);
+
+      // 断言返回结果符合预期
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        id: 'topic1',
+        title: 'Topic 1',
+        count: 3,
+        sessionId,
+      });
+      expect(result[1]).toMatchObject({
+        id: 'topic2',
+        title: 'Topic 2',
+        count: 2,
+        sessionId,
+      });
+    });
+
+    it('should return empty array if no topics exist', async () => {
+      const result = await topicModel.rank();
+      expect(result).toHaveLength(0);
+    });
+
+    it('should respect the limit parameter', async () => {
+      // 创建测试数据
+      await serverDB.transaction(async (tx) => {
+        await tx.insert(topics).values([
+          { id: 'topic1', title: 'Topic 1', sessionId, userId },
+          { id: 'topic2', title: 'Topic 2', sessionId, userId },
+        ]);
+
+        await tx.insert(messages).values([
+          { id: 'msg1', role: 'user', topicId: 'topic1', userId },
+          { id: 'msg2', role: 'user', topicId: 'topic2', userId },
+        ]);
+      });
+
+      // 使用限制为 1 调用 rank 方法
+      const result = await topicModel.rank(1);
+
+      // 断言只返回一个结果
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('count with date filters', () => {
+    beforeEach(async () => {
+      // 创建测试数据
+      await serverDB.insert(topics).values([
+        {
+          id: 'topic1',
+          userId,
+          createdAt: new Date('2023-01-01'),
+        },
+        {
+          id: 'topic2',
+          userId,
+          createdAt: new Date('2023-02-01'),
+        },
+        {
+          id: 'topic3',
+          userId,
+          createdAt: new Date('2023-03-01'),
+        },
+      ]);
+    });
+
+    it('should count topics with start date filter', async () => {
+      const result = await topicModel.count({
+        startDate: '2023-02-01',
+      });
+
+      expect(result).toBe(2); // should count topics from Feb 1st onwards
+    });
+
+    it('should count topics with end date filter', async () => {
+      const result = await topicModel.count({
+        endDate: '2023-02-01',
+      });
+
+      expect(result).toBe(2); // should count topics up to Feb 1st
+    });
+
+    it('should count topics within date range', async () => {
+      const result = await topicModel.count({
+        range: ['2023-01-15', '2023-02-15'],
+      });
+
+      expect(result).toBe(1); // should only count topic2
+    });
+
+    it('should return 0 if no topics match date filters', async () => {
+      const result = await topicModel.count({
+        range: ['2024-01-01', '2024-12-31'],
+      });
+
+      expect(result).toBe(0);
+    });
+
+    it('should handle invalid date filters gracefully', async () => {
+      const result = await topicModel.count({
+        startDate: 'invalid-date',
+      });
+
+      expect(result).toBe(3); // should return all topics if date is invalid
     });
   });
 });

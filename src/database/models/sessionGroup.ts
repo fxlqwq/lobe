@@ -1,90 +1,70 @@
-import { BaseModel } from '@/database/core';
-import { DB_SessionGroup, DB_SessionGroupSchema } from '@/database/schemas/sessionGroup';
-import { SessionGroups } from '@/types/session';
-import { nanoid } from '@/utils/uuid';
+import { and, asc, desc, eq } from 'drizzle-orm/expressions';
 
-class _SessionGroupModel extends BaseModel {
-  constructor() {
-    super('sessionGroups', DB_SessionGroupSchema);
+import { LobeChatDatabase } from '@/database/type';
+import { idGenerator } from '@/database/utils/idGenerator';
+
+import { SessionGroupItem, sessionGroups } from '../schemas';
+
+export class SessionGroupModel {
+  private userId: string;
+  private db: LobeChatDatabase;
+
+  constructor(db: LobeChatDatabase, userId: string) {
+    this.userId = userId;
+    this.db = db;
   }
 
-  // **************** Query *************** //
+  create = async (params: { name: string; sort?: number }) => {
+    const [result] = await this.db
+      .insert(sessionGroups)
+      .values({ ...params, id: this.genId(), userId: this.userId })
+      .returning();
 
-  async query(): Promise<SessionGroups> {
-    const allGroups = await this.table.toArray();
+    return result;
+  };
 
-    // 自定义排序，先按 sort 存在与否分组，然后分别排序
-    return allGroups.sort((a, b) => {
-      // 如果两个项都有 sort，则按 sort 排序
-      if (a.sort !== undefined && b.sort !== undefined) {
-        // 如果sort 一样，按时间倒序排序
-        if (a.sort === b.sort) return b.createdAt - a.createdAt;
+  delete = async (id: string) => {
+    return this.db
+      .delete(sessionGroups)
+      .where(and(eq(sessionGroups.id, id), eq(sessionGroups.userId, this.userId)));
+  };
 
-        return a.sort - b.sort;
-      }
-      // 如果 a 有 sort 而 b 没有，则 a 排在前面
-      if (a.sort !== undefined) {
-        return -1;
-      }
-      // 如果 b 有 sort 而 a 没有，则 b 排在前面
-      if (b.sort !== undefined) {
-        return 1;
-      }
-      // 如果两个项都没有 sort，则按 createdAt 倒序排序
-      return b.createdAt - a.createdAt;
+  deleteAll = async () => {
+    return this.db.delete(sessionGroups).where(eq(sessionGroups.userId, this.userId));
+  };
+
+  query = async () => {
+    return this.db.query.sessionGroups.findMany({
+      orderBy: [asc(sessionGroups.sort), desc(sessionGroups.createdAt)],
+      where: eq(sessionGroups.userId, this.userId),
     });
-  }
+  };
 
-  async findById(id: string): Promise<DB_SessionGroup> {
-    return this.table.get(id);
-  }
-
-  // **************** Create *************** //
-
-  async create(name: string, sort?: number, id = nanoid()) {
-    return this._addWithSync({ name, sort }, id);
-  }
-
-  async batchCreate(groups: SessionGroups) {
-    return this._batchAdd(groups, { idGenerator: nanoid });
-  }
-
-  // **************** Delete *************** //
-  async delete(id: string, removeGroupItem: boolean = false) {
-    const { SessionModel } = await import('./session');
-    this.db.sessions.toCollection().modify(async (session) => {
-      //  update all session associated with the sessionGroup to default
-      if (session.group === id) {
-        await SessionModel.update(session.id, { group: 'default' });
-      }
+  findById = async (id: string) => {
+    return this.db.query.sessionGroups.findFirst({
+      where: and(eq(sessionGroups.id, id), eq(sessionGroups.userId, this.userId)),
     });
+  };
 
-    if (!removeGroupItem) {
-      return this._deleteWithSync(id);
-    } else {
-      const sessionIds = await this.db.sessions.where('group').equals(id).primaryKeys();
+  update = async (id: string, value: Partial<SessionGroupItem>) => {
+    return this.db
+      .update(sessionGroups)
+      .set({ ...value, updatedAt: new Date() })
+      .where(and(eq(sessionGroups.id, id), eq(sessionGroups.userId, this.userId)));
+  };
 
-      return await SessionModel.batchDelete(sessionIds);
-    }
-  }
+  updateOrder = async (sortMap: { id: string; sort: number }[]) => {
+    await this.db.transaction(async (tx) => {
+      const updates = sortMap.map(({ id, sort }) => {
+        return tx
+          .update(sessionGroups)
+          .set({ sort, updatedAt: new Date() })
+          .where(and(eq(sessionGroups.id, id), eq(sessionGroups.userId, this.userId)));
+      });
 
-  async clear() {
-    await this._clearWithSync();
-  }
-
-  // **************** Update *************** //
-
-  async update(id: string, data: Partial<DB_SessionGroup>) {
-    return super._updateWithSync(id, data);
-  }
-
-  async updateOrder(sortMap: { id: string; sort: number }[]) {
-    return this.db.transaction('rw', this.table, async () => {
-      for (const { id, sort } of sortMap) {
-        await this.update(id, { sort });
-      }
+      await Promise.all(updates);
     });
-  }
+  };
+
+  private genId = () => idGenerator('sessionGroups');
 }
-
-export const SessionGroupModel = new _SessionGroupModel();
